@@ -68,9 +68,6 @@ using Random = System.Random;
 
 namespace CraftMagicItems {
     public static class Main {
-        private const int MissingPrerequisiteDCModifier = 5;
-        private const int OppositionSchoolDCModifier = 4;
-        private const int AdventuringProgressPenalty = 4;
         private const string BondedItemRitual = "bondedItemRitual";
 
         private static readonly string[] CraftingPriceStrings = {
@@ -80,10 +77,6 @@ namespace CraftMagicItems {
         };
 
         private const string CustomPriceLabel = "Crafting Cost: ";
-        private static readonly LocalizedString CasterLevelLocalized = new L10NString("dfb34498-61df-49b1-af18-0a84ce47fc98");
-        private static readonly LocalizedString CharacterUsedItemLocalized = new L10NString("be7942ed-3af1-4fc7-b20b-41966d2f80b7");
-        private static readonly LocalizedString ShieldBashLocalized = new L10NString("314ff56d-e93b-4915-8ca4-24a7670ad436");
-        private static readonly LocalizedString QualitiesLocalized = new L10NString("0f84fde9-14ca-4e2f-9c82-b2522039dbff");
 
         private static readonly WeaponCategory[] AmmunitionWeaponCategories = {
             WeaponCategory.Longbow,
@@ -1280,7 +1273,7 @@ namespace CraftMagicItems {
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Prerequisites: ", GUILayout.ExpandWidth(false));
-            var prerequisites = $"{CasterLevelLocalized} {casterLevel}";
+            var prerequisites = $"{LocalizedStringBlueprints.CasterLevelLocalized} {casterLevel}";
             if (selectedRecipe.PrerequisiteSpells != null && selectedRecipe.PrerequisiteSpells.Length > 0) {
                 prerequisites += $"; {selectedRecipe.PrerequisiteSpells.Select(ability => ability.Name).BuildCommaList(selectedRecipe.AnyPrerequisite)}";
             }
@@ -1469,13 +1462,13 @@ namespace CraftMagicItems {
                     qualities = GetEnchantmentNames(shield.ArmorComponent);
                     var weaponQualities = shield.WeaponComponent == null ? null : GetEnchantmentNames(shield.WeaponComponent);
                     if (!string.IsNullOrEmpty(weaponQualities)) {
-                        qualities = $"{qualities}{(string.IsNullOrEmpty(qualities) ? "" : ", ")}{ShieldBashLocalized}: {weaponQualities}";
+                        qualities = $"{qualities}{(string.IsNullOrEmpty(qualities) ? "" : ", ")}{LocalizedStringBlueprints.ShieldBashLocalized}: {weaponQualities}";
                     }
                 } else {
                     qualities = GetEnchantmentNames(item.Blueprint);
                 }
                 if (!string.IsNullOrEmpty(qualities)) {
-                    description += $"{(string.IsNullOrEmpty(description) ? "" : "\n")}{QualitiesLocalized}: {qualities}";
+                    description += $"{(string.IsNullOrEmpty(description) ? "" : "\n")}{LocalizedStringBlueprints.QualitiesLocalized}: {qualities}";
                 }
             }
             return description;
@@ -1666,20 +1659,20 @@ namespace CraftMagicItems {
             }
             if (missing > 0 && render) {
                 UmmUiRenderer.RenderLabelRow(
-                    $"{crafter.CharacterName} is unable to meet {missing} of the prerequisites, raising the DC by {MissingPrerequisiteDCModifier * missing}");
+                    $"{crafter.CharacterName} is unable to meet {missing} of the prerequisites, raising the DC by {DifficultyClass.MissingPrerequisiteDCModifier * missing}");
             }
             if (casterLevelShortfall > 0 && render) {
-                UmmUiRenderer.RenderLabelRow(L10NFormat("craftMagicItems-logMessage-low-caster-level", casterLevel, MissingPrerequisiteDCModifier * casterLevelShortfall));
+                UmmUiRenderer.RenderLabelRow(L10NFormat("craftMagicItems-logMessage-low-caster-level", casterLevel, DifficultyClass.MissingPrerequisiteDCModifier * casterLevelShortfall));
             }
             // Rob's ruling... if you're below the prerequisite caster level, you're considered to be missing a prerequisite for each
             // level you fall short.
-            dc += MissingPrerequisiteDCModifier * (missing + casterLevelShortfall);
+            dc += DifficultyClass.MissingPrerequisiteDCModifier * (missing + casterLevelShortfall);
             var oppositionSchool = CheckForOppositionSchool(crafter.Descriptor, prerequisiteSpells);
             if (oppositionSchool != SpellSchool.None) {
-                dc += OppositionSchoolDCModifier;
+                dc += DifficultyClass.OppositionSchoolDCModifier;
                 if (render) {
                     UmmUiRenderer.RenderLabelRow(L10NFormat("craftMagicItems-logMessage-opposition-school", LocalizedTexts.Instance.SpellSchoolNames.GetText(oppositionSchool),
-                        OppositionSchoolDCModifier));
+                        DifficultyClass.OppositionSchoolDCModifier));
                 }
             }
             var skillCheck = 10 + crafter.Stats.GetStat(skill).ModifiedValue;
@@ -2311,7 +2304,7 @@ namespace CraftMagicItems {
             if (ModSettings.CraftAtFullSpeedWhileAdventuring) {
                 project.AddMessage(new L10NString("craftMagicItems-time-estimate-single-rate"));
             } else {
-                var progressPerDayAdventuring = (int) (progressRate * (1 + (float) skillMargin / 5) / AdventuringProgressPenalty);
+                var progressPerDayAdventuring = (int) (progressRate * (1 + (float) skillMargin / 5) / DifficultyClass.AdventuringProgressPenalty);
                 var adventuringDayCount = (project.TargetCost + progressPerDayAdventuring - 1) / progressPerDayAdventuring;
                 project.AddMessage(adventuringDayCount == 1
                     ? new L10NString("craftMagicItems-time-estimate-one-day")
@@ -3435,7 +3428,7 @@ namespace CraftMagicItems {
             var missing = GetMissingCrafterPrerequisites(project.CrafterPrerequisites, caster);
             foreach (var prerequisite in missing) {
                 AddBattleLogMessage(L10NFormat("craftMagicItems-logMessage-missing-crafter-prerequisite",
-                    new L10NString($"craftMagicItems-crafter-prerequisite-{prerequisite}"), MissingPrerequisiteDCModifier));
+                    new L10NString($"craftMagicItems-crafter-prerequisite-{prerequisite}"), DifficultyClass.MissingPrerequisiteDCModifier));
             }
 
             return missing.Count;
@@ -3555,32 +3548,32 @@ namespace CraftMagicItems {
                     }
 
                     AddBattleLogMessage(L10NFormat("craftMagicItems-logMessage-missing-spell", missingSpellNames,
-                        MissingPrerequisiteDCModifier * missing));
+                        DifficultyClass.MissingPrerequisiteDCModifier * missing));
                 }
                 var missing2 = CheckFeatPrerequisites(project, caster, out var missingFeats);
                 if (missing2 > 0) {
                     var missingFeatNames = missingFeats.Select(ability => ability.Name).BuildCommaList(project.AnyPrerequisite);
                     AddBattleLogMessage(L10NFormat("craftMagicItems-logMessage-missing-feat", missingFeatNames,
-                        MissingPrerequisiteDCModifier * missing2));
+                        DifficultyClass.MissingPrerequisiteDCModifier * missing2));
                 }
                 missing += missing2;
                 missing += CheckCrafterPrerequisites(project, caster);
-                dc += MissingPrerequisiteDCModifier * missing;
+                dc += DifficultyClass.MissingPrerequisiteDCModifier * missing;
                 var casterLevel = CharacterCasterLevel(caster);
                 if (casterLevel < project.CasterLevel) {
                     // Rob's ruling... if you're below the prerequisite caster level, you're considered to be missing a prerequisite for each
                     // level you fall short, unless ModSettings.CasterLevelIsSinglePrerequisite is true.
                     var casterLevelPenalty = ModSettings.CasterLevelIsSinglePrerequisite
-                        ? MissingPrerequisiteDCModifier
-                        : MissingPrerequisiteDCModifier * (project.CasterLevel - casterLevel);
+                        ? DifficultyClass.MissingPrerequisiteDCModifier
+                        : DifficultyClass.MissingPrerequisiteDCModifier * (project.CasterLevel - casterLevel);
                     dc += casterLevelPenalty;
                     AddBattleLogMessage(L10NFormat("craftMagicItems-logMessage-low-caster-level", project.CasterLevel, casterLevelPenalty));
                 }
                 var oppositionSchool = CheckForOppositionSchool(caster, project.SpellPrerequisites);
                 if (oppositionSchool != SpellSchool.None) {
-                    dc += OppositionSchoolDCModifier;
+                    dc += DifficultyClass.OppositionSchoolDCModifier;
                     AddBattleLogMessage(L10NFormat("craftMagicItems-logMessage-opposition-school",
-                        LocalizedTexts.Instance.SpellSchoolNames.GetText(oppositionSchool), OppositionSchoolDCModifier));
+                        LocalizedTexts.Instance.SpellSchoolNames.GetText(oppositionSchool), DifficultyClass.OppositionSchoolDCModifier));
                 }
 
                 var skillCheck = 10 + caster.Stats.GetStat(craftingSkill).ModifiedValue;
@@ -3594,7 +3587,7 @@ namespace CraftMagicItems {
 
                 // Cleared the last hurdle, so caster is going to make progress on this project.
                 // You only work at 1/4 speed if you're crafting while adventuring.
-                var adventuringPenalty = !isAdventuring || ModSettings.CraftAtFullSpeedWhileAdventuring ? 1 : AdventuringProgressPenalty;
+                var adventuringPenalty = !isAdventuring || ModSettings.CraftAtFullSpeedWhileAdventuring ? 1 : DifficultyClass.AdventuringProgressPenalty;
                 // Each 1 by which the skill check exceeds the DC increases the crafting rate by 20% of the base progressRate
                 var progressPerDay = (int) (progressRate * (1 + (float) (skillCheck - dc) / 5) / adventuringPenalty);
                 var daysUntilProjectFinished = (int) Math.Ceiling(1.0 * (project.TargetCost - project.Progress) / progressPerDay);
@@ -3614,14 +3607,14 @@ namespace CraftMagicItems {
                                 if (itemSpell == null) {
                                     // We've run out of items that can cast the spell...crafting progress is going to slow, if not stop.
                                     progressGold -= progressPerDay * (daysCrafting - day);
-                                    skillCheck -= MissingPrerequisiteDCModifier;
+                                    skillCheck -= DifficultyClass.MissingPrerequisiteDCModifier;
                                     if (craftingData.PrerequisitesMandatory || project.PrerequisitesMandatory) {
                                         AddBattleLogMessage(L10NFormat("craftMagicItems-logMessage-missing-prerequisite", project.ResultItem.Name, spell.Name));
                                         daysCrafting = day;
                                         break;
                                     }
 
-                                    AddBattleLogMessage(L10NFormat("craftMagicItems-logMessage-missing-spell", spell.Name, MissingPrerequisiteDCModifier));
+                                    AddBattleLogMessage(L10NFormat("craftMagicItems-logMessage-missing-spell", spell.Name, DifficultyClass.MissingPrerequisiteDCModifier));
                                     if (skillCheck < dc) {
                                         // Can no longer make progress
                                         AddBattleLogMessage(L10NFormat("craftMagicItems-logMessage-dc-too-high", project.ResultItem.Name,
@@ -3641,7 +3634,7 @@ namespace CraftMagicItems {
 
                                 GameLogContext.SourceUnit = caster.Unit;
                                 GameLogContext.Text = itemSpell.SourceItem.Name;
-                                AddBattleLogMessage(CharacterUsedItemLocalized);
+                                AddBattleLogMessage(LocalizedStringBlueprints.CharacterUsedItemLocalized);
                                 GameLogContext.Clear();
                                 itemSpell.SourceItem.SpendCharges(caster);
                             }
@@ -4010,16 +4003,16 @@ namespace CraftMagicItems {
                         TooltipData tmp = new TooltipData();
                         string result = Accessors.CallUIUtilityItemFillEnchantmentDescription(shield.WeaponComponent, tmp);
                         if (!string.IsNullOrEmpty(result)) {
-                            __result += $"<b><align=\"center\">{ShieldBashLocalized}</align></b>\n";
+                            __result += $"<b><align=\"center\">{LocalizedStringBlueprints.ShieldBashLocalized}</align></b>\n";
                             __result += result;
                         }
                         data.Texts[TooltipElement.AttackType] = tmp.Texts[TooltipElement.AttackType];
                         data.Texts[TooltipElement.ProficiencyGroup] = tmp.Texts[TooltipElement.ProficiencyGroup];
                         if (tmp.Texts.ContainsKey(TooltipElement.Qualities) && !string.IsNullOrEmpty(tmp.Texts[TooltipElement.Qualities])) {
                             if (data.Texts.ContainsKey(TooltipElement.Qualities)) {
-                                data.Texts[TooltipElement.Qualities] += $",  {ShieldBashLocalized}:  {tmp.Texts[TooltipElement.Qualities]}";
+                                data.Texts[TooltipElement.Qualities] += $",  {LocalizedStringBlueprints.ShieldBashLocalized}:  {tmp.Texts[TooltipElement.Qualities]}";
                             } else {
-                                data.Texts[TooltipElement.Qualities] = $"{ShieldBashLocalized}:  {tmp.Texts[TooltipElement.Qualities]}";
+                                data.Texts[TooltipElement.Qualities] = $"{LocalizedStringBlueprints.ShieldBashLocalized}:  {tmp.Texts[TooltipElement.Qualities]}";
                             }
                         }
                         data.Texts[TooltipElement.Damage] = tmp.Texts[TooltipElement.Damage];
