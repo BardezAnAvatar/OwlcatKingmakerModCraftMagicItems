@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using CraftMagicItems.Constants;
-using CraftMagicItems.Patches;
 using CraftMagicItems.UI;
 using CraftMagicItems.UI.Sections;
 using CraftMagicItems.UI.UnityModManager;
