@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using CraftMagicItems.Constants;
+using CraftMagicItems.Patches;
 using CraftMagicItems.UI;
 using CraftMagicItems.UI.Sections;
 using CraftMagicItems.UI.UnityModManager;
@@ -3127,26 +3128,10 @@ namespace CraftMagicItems {
                 }
             }
 
-            private static void PatchIk() {
-                foreach (var patch in VisualAdjustmentPatches.IkPatchList) {
-                    var weapon = ResourcesLibrary.TryGetBlueprint<BlueprintWeaponType>(patch.BlueprintId);
-                    if (weapon != null) {
-                        var model = weapon.VisualParameters.Model;
-                        var equipmentOffsets = model.GetComponent<EquipmentOffsets>();
-                        var locator = new GameObject();
-                        locator.transform.SetParent(model.transform);
-                        locator.transform.localPosition = new Vector3(patch.X, patch.Y, patch.Z);
-                        locator.transform.localEulerAngles = new Vector3(0.0f, 0.0f, 0.0f);
-                        locator.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
-                        equipmentOffsets.IkTargetLeftHand = locator.transform;
-                    }
-                }
-            }
-
             private static void InitialiseMod() {
                 if (modEnabled) {
                     PatchBlueprints();
-                    PatchIk();
+                    LeftHandVisualDisplayPatcher.PatchLeftHandedWeaponModels();
                     InitialiseCraftingData();
                     AddAllCraftingFeats();
                 }
