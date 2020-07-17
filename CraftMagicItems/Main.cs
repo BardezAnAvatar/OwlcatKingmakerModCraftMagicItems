@@ -3,21 +3,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using CraftMagicItems.Config;
 using CraftMagicItems.Constants;
 using CraftMagicItems.Localization;
 using CraftMagicItems.Patches;
+using CraftMagicItems.Patches.Harmony;
 using CraftMagicItems.UI;
 using CraftMagicItems.UI.Sections;
 using CraftMagicItems.UI.UnityModManager;
 using Kingmaker;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
-using Kingmaker.Blueprints.Classes.Selection;
 using Kingmaker.Blueprints.Classes.Spells;
-using Kingmaker.Blueprints.Facts;
 using Kingmaker.Blueprints.Items;
 using Kingmaker.Blueprints.Items.Armors;
 using Kingmaker.Blueprints.Items.Ecnchantments;
@@ -27,49 +25,37 @@ using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.Blueprints.Loot;
 using Kingmaker.Blueprints.Root;
 using Kingmaker.Blueprints.Root.Strings.GameLog;
-using Kingmaker.Controllers.Rest;
-using Kingmaker.Designers;
 using Kingmaker.Designers.Mechanics.EquipmentEnchants;
 using Kingmaker.Designers.Mechanics.Facts;
-using Kingmaker.Designers.Mechanics.WeaponEnchants;
-using Kingmaker.Designers.TempMapCode.Capital;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
 using Kingmaker.Enums.Damage;
 using Kingmaker.GameModes;
 using Kingmaker.Items;
-using Kingmaker.Items.Slots;
 using Kingmaker.Kingdom;
 using Kingmaker.Localization;
 using Kingmaker.PubSubSystem;
 using Kingmaker.RuleSystem;
-using Kingmaker.RuleSystem.Rules;
 using Kingmaker.RuleSystem.Rules.Abilities;
-using Kingmaker.RuleSystem.Rules.Damage;
 using Kingmaker.UI;
-using Kingmaker.UI.ActionBar;
 using Kingmaker.UI.Common;
 using Kingmaker.UI.Log;
-using Kingmaker.UI.Tooltip;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
-using Kingmaker.UnitLogic.ActivatableAbilities;
 using Kingmaker.UnitLogic.Alignments;
 using Kingmaker.UnitLogic.Buffs;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.FactLogic;
-using Kingmaker.UnitLogic.Mechanics.Components;
-using Kingmaker.UnitLogic.Parts;
 using Kingmaker.Utility;
-using Kingmaker.View.Equipment;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityModManagerNet;
 using Random = System.Random;
 
-namespace CraftMagicItems {
+namespace CraftMagicItems
+{
     public static class Main {
         private const string BondedItemRitual = "bondedItemRitual";
 
@@ -112,12 +98,12 @@ namespace CraftMagicItems {
         public static CraftMagicItemsAccessors Accessors;
         public static readonly List<LogDataManager.LogItemData> PendingLogItems = new List<LogDataManager.LogItemData>();
 
-        private static bool modEnabled = true;
+        public static bool modEnabled = true;
         private static Harmony12.HarmonyInstance harmonyInstance;
         private static CraftMagicItemsBlueprintPatcher blueprintPatcher;
 
-        private static readonly Dictionary<ItemEntity, CraftingProjectData> ItemUpgradeProjects = new Dictionary<ItemEntity, CraftingProjectData>();
-        private static readonly List<CraftingProjectData> ItemCreationProjects = new List<CraftingProjectData>();
+        public static readonly Dictionary<ItemEntity, CraftingProjectData> ItemUpgradeProjects = new Dictionary<ItemEntity, CraftingProjectData>();
+        public static readonly List<CraftingProjectData> ItemCreationProjects = new List<CraftingProjectData>();
 
         private static readonly Random RandomGenerator = new Random();
 
@@ -276,7 +262,7 @@ namespace CraftMagicItems {
             }
         }
 
-        private static CraftingTimerComponent GetCraftingTimerComponentForCaster(UnitDescriptor caster, bool create = false) {
+        public static CraftingTimerComponent GetCraftingTimerComponentForCaster(UnitDescriptor caster, bool create = false) {
             // Manually search caster.Buffs rather than using GetFact, because we don't want to TryGetBlueprint if the mod is disabled.
             var timerBuff = caster.Buffs.Enumerable.FirstOrDefault(fact => fact.Blueprint.AssetGuid == CraftMagicItemsBlueprintPatcher.TimerBlueprintGuid);
             if (timerBuff == null) {
@@ -645,7 +631,7 @@ namespace CraftMagicItems {
             }
         }
 
-        private static IEnumerable<BlueprintItemEnchantment> GetEnchantments(BlueprintItem blueprint, RecipeData sourceRecipe = null) {
+        public static IEnumerable<BlueprintItemEnchantment> GetEnchantments(BlueprintItem blueprint, RecipeData sourceRecipe = null) {
             if (blueprint is BlueprintItemShield shield) {
                 // A shield can be treated as armor or as a weapon... assume armor unless being used by a recipe which applies to weapons.
                 var weaponRecipe = sourceRecipe?.OnlyForSlots?.Contains(ItemsFilter.ItemType.Weapon) ?? false;
@@ -729,7 +715,7 @@ namespace CraftMagicItems {
             return null;
         }
 
-        private static bool DoesItemMatchAllEnchantments(BlueprintItemEquipment blueprint, string selectedEnchantmentId,
+        public static bool DoesItemMatchAllEnchantments(BlueprintItemEquipment blueprint, string selectedEnchantmentId,
             string selectedEnchantmentIdSecond = null, BlueprintItemEquipment upgradeItem = null, bool checkPrice = false) {
             var isNotable = upgradeItem && upgradeItem.IsNotable;
             var ability = upgradeItem ? upgradeItem.Ability : null;
@@ -824,7 +810,7 @@ namespace CraftMagicItems {
             return GetEnchantments(blueprint).Any(enchantment => enchantment.AssetGuid == ItemQualityBlueprints.MasterworkGuid);
         }
 
-        private static bool IsOversized(BlueprintItem blueprint) {
+        public static bool IsOversized(BlueprintItem blueprint) {
             return GetEnchantments(blueprint).Any(enchantment => enchantment.AssetGuid.StartsWith(ItemQualityBlueprints.OversizedGuid));
         }
 
@@ -943,7 +929,7 @@ namespace CraftMagicItems {
                 ;
         }
 
-        private static ItemEntity BuildItemEntity(BlueprintItem blueprint, ItemCraftingData craftingData, UnitEntityData crafter) {
+        public static ItemEntity BuildItemEntity(BlueprintItem blueprint, ItemCraftingData craftingData, UnitEntityData crafter) {
             var item = blueprint.CreateEntity();
             item.Identify();
             item.SetVendorIfNull(crafter);
@@ -2059,14 +2045,14 @@ namespace CraftMagicItems {
             return LoadedData.SpellIdToItem[itemType].ContainsKey(spell.AssetGuid) ? LoadedData.SpellIdToItem[itemType][spell.AssetGuid] : null;
         }
 
-        private static void AddItemForType(BlueprintItem blueprint) {
+        public static void AddItemForType(BlueprintItem blueprint) {
             string assetGuid = GetBlueprintItemType(blueprint);
             if (!string.IsNullOrEmpty(assetGuid)) {
                 LoadedData.TypeToItem.Add(assetGuid, blueprint);
             }
         }
 
-        private static void AddItemIdForEnchantment(BlueprintItemEquipment itemBlueprint) {
+        public static void AddItemIdForEnchantment(BlueprintItemEquipment itemBlueprint) {
             if (itemBlueprint != null) {
                 foreach (var enchantment in GetEnchantments(itemBlueprint)) {
                     if (!LoadedData.EnchantmentIdToItem.ContainsKey(enchantment.AssetGuid)) {
@@ -2078,7 +2064,7 @@ namespace CraftMagicItems {
             }
         }
 
-        private static void AddRecipeForEnchantment(string enchantmentId, RecipeData recipe) {
+        public static void AddRecipeForEnchantment(string enchantmentId, RecipeData recipe) {
             if (!LoadedData.EnchantmentIdToRecipe.ContainsKey(enchantmentId)) {
                 LoadedData.EnchantmentIdToRecipe.Add(enchantmentId, new List<RecipeData>());
             }
@@ -2088,7 +2074,7 @@ namespace CraftMagicItems {
             }
         }
 
-        private static void AddRecipeForMaterial(PhysicalDamageMaterial material, RecipeData recipe) {
+        public static void AddRecipeForMaterial(PhysicalDamageMaterial material, RecipeData recipe) {
             if (!LoadedData.MaterialToRecipe.ContainsKey(material)) {
                 LoadedData.MaterialToRecipe.Add(material, new List<RecipeData>());
             }
@@ -2497,7 +2483,8 @@ namespace CraftMagicItems {
                     if (oldBonus > newBonus) {
                         if (skipped.Contains(enchantment)) {
                             return new L10NString("");
-                        } else {
+                        } else
+                        {
                             return LocalizationHelper.FormatLocalizedString("craftMagicItems-custom-description-enchantment-template", bonusString, bonusDescription);
                         }
                     } else {
@@ -2756,7 +2743,7 @@ namespace CraftMagicItems {
 
         // Attempt to work out the cost of enchantments which aren't in recipes by checking if blueprint, which contains the enchantment, contains only other
         // enchantments whose cost is known.
-        private static bool ReverseEngineerEnchantmentCost(BlueprintItemEquipment blueprint, string enchantmentId) {
+        public static bool ReverseEngineerEnchantmentCost(BlueprintItemEquipment blueprint, string enchantmentId) {
             if (blueprint == null || blueprint.IsNotable || blueprint.Ability != null || blueprint.ActivatableAbility != null) {
                 return false;
             }
@@ -2796,445 +2783,12 @@ namespace CraftMagicItems {
             return true;
         }
 
-        [Harmony12.HarmonyPatch(typeof(MainMenu), "Start")]
-        private static class MainMenuStartPatch {
-            private static bool mainMenuStarted;
-
-            private static void InitialiseCraftingData() {
-                // Read the crafting data now that ResourcesLibrary is loaded.
-                LoadedData.ItemCraftingData = ReadJsonFile<ItemCraftingData[]>($"{ModEntry.Path}/Data/ItemTypes.json", new CraftingTypeConverter());
-                // Initialise lookup tables.
-                foreach (var itemData in LoadedData.ItemCraftingData) {
-                    if (itemData is RecipeBasedItemCraftingData recipeBased) {
-                        recipeBased.Recipes = recipeBased.RecipeFileNames.Aggregate(Enumerable.Empty<RecipeData>(),
-                            (all, fileName) => all.Concat(ReadJsonFile<RecipeData[]>($"{ModEntry.Path}/Data/{fileName}"))
-                        ).Where(recipe => {
-                            return (recipe.ResultItem != null)
-                                || (recipe.Enchantments.Length > 0)
-                                || (recipe.NoResultItem && recipe.NoEnchantments);
-                        }).ToArray();
-
-                        foreach (var recipe in recipeBased.Recipes) {
-                            if (recipe.ResultItem != null) {
-                                if (recipe.NameId == null) {
-                                    recipe.NameId = recipe.ResultItem.Name;
-                                } else {
-                                    recipe.NameId = new L10NString(recipe.NameId).ToString();
-                                }
-                            } else if (recipe.NameId != null) {
-                                recipe.NameId = new L10NString(recipe.NameId).ToString();
-                            }
-                            if (recipe.ParentNameId != null) {
-                                recipe.ParentNameId = new L10NString(recipe.ParentNameId).ToString();
-                            }
-                            recipe.Enchantments.ForEach(enchantment => AddRecipeForEnchantment(enchantment.AssetGuid, recipe));
-                            if (recipe.Material != 0) {
-                                AddRecipeForMaterial(recipe.Material, recipe);
-                            }
-
-                            if (recipe.ParentNameId != null) {
-                                recipeBased.SubRecipes = recipeBased.SubRecipes ?? new Dictionary<string, List<RecipeData>>();
-                                if (!recipeBased.SubRecipes.ContainsKey(recipe.ParentNameId)) {
-                                    recipeBased.SubRecipes[recipe.ParentNameId] = new List<RecipeData>();
-                                }
-
-                                recipeBased.SubRecipes[recipe.ParentNameId].Add(recipe);
-                            }
-                        }
-
-                        if (recipeBased.Name.StartsWith("CraftMundane")) {
-                            foreach (var blueprint in recipeBased.NewItemBaseIDs) {
-                                if (!blueprint.AssetGuid.Contains("#CraftMagicItems")) {
-                                    AddItemForType(blueprint);
-                                }
-                            }
-                        }
-                    }
-
-                    if (itemData.ParentNameId != null) {
-                        if (!LoadedData.SubCraftingData.ContainsKey(itemData.ParentNameId)) {
-                            LoadedData.SubCraftingData[itemData.ParentNameId] = new List<ItemCraftingData>();
-                        }
-
-                        LoadedData.SubCraftingData[itemData.ParentNameId].Add(itemData);
-                    }
-                }
-
-                var allUsableItems = Resources.FindObjectsOfTypeAll<BlueprintItemEquipment>();
-                foreach (var item in allUsableItems) {
-                    AddItemIdForEnchantment(item);
-                }
-
-                var allNonRecipeEnchantmentsInItems = Resources.FindObjectsOfTypeAll<BlueprintEquipmentEnchantment>()
-                    .Where(enchantment => !LoadedData.EnchantmentIdToRecipe.ContainsKey(enchantment.AssetGuid) && LoadedData.EnchantmentIdToItem.ContainsKey(enchantment.AssetGuid))
-                    .ToArray();
-                // BlueprintEnchantment.EnchantmentCost seems to be full of nonsense values - attempt to set cost of each enchantment by using the prices of
-                // items with enchantments.
-                foreach (var enchantment in allNonRecipeEnchantmentsInItems) {
-                    var itemsWithEnchantment = LoadedData.EnchantmentIdToItem[enchantment.AssetGuid];
-                    foreach (var item in itemsWithEnchantment) {
-                        if (DoesItemMatchAllEnchantments(item, enchantment.AssetGuid)) {
-                            LoadedData.EnchantmentIdToCost[enchantment.AssetGuid] = item.Cost;
-                            break;
-                        }
-                    }
-                }
-
-                foreach (var enchantment in allNonRecipeEnchantmentsInItems) {
-                    if (!LoadedData.EnchantmentIdToCost.ContainsKey(enchantment.AssetGuid)) {
-                        var itemsWithEnchantment = LoadedData.EnchantmentIdToItem[enchantment.AssetGuid];
-                        foreach (var item in itemsWithEnchantment) {
-                            if (ReverseEngineerEnchantmentCost(item, enchantment.AssetGuid)) {
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                LoadedData.CustomLootItems = ReadJsonFile<CustomLootItem[]>($"{ModEntry.Path}/Data/LootItems.json");
-            }
-
-            private static void AddCraftingFeats(ObjectIDGenerator idGenerator, BlueprintProgression progression) {
-                foreach (var levelEntry in progression.LevelEntries) {
-                    foreach (var featureBase in levelEntry.Features) {
-                        var selection = featureBase as BlueprintFeatureSelection;
-                        if (selection != null && (Features.CraftingFeatGroups.Contains(selection.Group) || Features.CraftingFeatGroups.Contains(selection.Group2))) {
-                            // Use ObjectIDGenerator to detect which shared lists we've added the feats to.
-                            idGenerator.GetId(selection.AllFeatures, out var firstTime);
-                            if (firstTime) {
-                                foreach (var data in LoadedData.ItemCraftingData) {
-                                    if (data.FeatGuid != null) {
-                                        var featBlueprint = ResourcesLibrary.TryGetBlueprint(data.FeatGuid) as BlueprintFeature;
-                                        var list = selection.AllFeatures.ToList();
-                                        list.Add(featBlueprint);
-                                        selection.AllFeatures = list.ToArray();
-                                        idGenerator.GetId(selection.AllFeatures, out firstTime);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            private static void AddAllCraftingFeats() {
-                var idGenerator = new ObjectIDGenerator();
-                // Add crafting feats to general feat selection
-                AddCraftingFeats(idGenerator, Game.Instance.BlueprintRoot.Progression.FeatsProgression);
-                // ... and to relevant class feat selections.
-                foreach (var characterClass in Game.Instance.BlueprintRoot.Progression.CharacterClasses) {
-                    AddCraftingFeats(idGenerator, characterClass.Progression);
-                }
-
-                // Alchemists get Brew Potion as a bonus 1st level feat, except for Grenadier archetype alchemists.
-                var brewPotionData = LoadedData.ItemCraftingData.First(data => data.Name == "Potion");
-                var brewPotion = ResourcesLibrary.TryGetBlueprint<BlueprintFeature>(brewPotionData.FeatGuid);
-                var alchemistProgression = ResourcesLibrary.TryGetBlueprint<BlueprintProgression>(ClassBlueprints.AlchemistProgressionGuid);
-                var grenadierArchetype = ResourcesLibrary.TryGetBlueprint<BlueprintArchetype>(ClassBlueprints.AlchemistGrenadierArchetypeGuid);
-                if (brewPotion != null && alchemistProgression != null && grenadierArchetype != null) {
-                    var firstLevelIndex = alchemistProgression.LevelEntries.FindIndex((levelEntry) => (levelEntry.Level == 1));
-                    alchemistProgression.LevelEntries[firstLevelIndex].Features.Add(brewPotion);
-                    alchemistProgression.UIDeterminatorsGroup = alchemistProgression.UIDeterminatorsGroup.Concat(new[] {brewPotion}).ToArray();
-                    // Vanilla Grenadier has no level 1 RemoveFeatures, but a mod may have changed that, so search for it as well.
-                    var firstLevelGrenadierRemoveIndex = grenadierArchetype.RemoveFeatures.FindIndex((levelEntry) => (levelEntry.Level == 1));
-                    if (firstLevelGrenadierRemoveIndex < 0) {
-                        var removeFeatures = new[] {new LevelEntry {Level = 1}};
-                        grenadierArchetype.RemoveFeatures = removeFeatures.Concat(grenadierArchetype.RemoveFeatures).ToArray();
-                        firstLevelGrenadierRemoveIndex = 0;
-                    }
-                    grenadierArchetype.RemoveFeatures[firstLevelGrenadierRemoveIndex].Features.Add(brewPotion);
-                } else {
-                    ModEntry.Logger.Warning("Failed to locate Alchemist progression, Grenadier archetype or Brew Potion feat!");
-                }
-
-                // Scroll Savant should get Scribe Scroll as a bonus 1st level feat.
-                var scribeScrollData = LoadedData.ItemCraftingData.First(data => data.Name == "Scroll");
-                var scribeScroll = ResourcesLibrary.TryGetBlueprint<BlueprintFeature>(scribeScrollData.FeatGuid);
-                var scrollSavantArchetype = ResourcesLibrary.TryGetBlueprint<BlueprintArchetype>(ClassBlueprints.ScrollSavantArchetypeGuid);
-                if (scribeScroll != null && scrollSavantArchetype != null) {
-                    var firstLevelAdd = scrollSavantArchetype.AddFeatures.First((levelEntry) => (levelEntry.Level == 1));
-                    firstLevelAdd.Features.Add(scribeScroll);
-                } else {
-                    ModEntry.Logger.Warning("Failed to locate Scroll Savant archetype or Scribe Scroll feat!");
-                }
-            }
-
-            [AllowMultipleComponents]
-            public class TwoWeaponFightingAttackPenaltyPatch : RuleInitiatorLogicComponent<RuleCalculateAttackBonusWithoutTarget>, IInitiatorRulebookHandler<RuleAttackWithWeapon> {
-                public BlueprintFeature shieldMaster;
-                public BlueprintFeature prodigiousTwoWeaponFighting;
-                private int penalty = 0;
-
-                public override void OnEventAboutToTrigger(RuleCalculateAttackBonusWithoutTarget evt) {
-                    penalty = 0;
-                    ItemEntityWeapon maybeWeapon = evt.Initiator.Body.PrimaryHand.MaybeWeapon;
-                    ItemEntityWeapon maybeWeapon2 = evt.Initiator.Body.SecondaryHand.MaybeWeapon;
-                    bool flag = maybeWeapon2 != null && evt.Weapon == maybeWeapon2 && maybeWeapon2.IsShield && base.Owner.Progression.Features.HasFact(shieldMaster);
-                    if (evt.Weapon == null || maybeWeapon == null || maybeWeapon2 == null || maybeWeapon.Blueprint.IsNatural || maybeWeapon2.Blueprint.IsNatural ||
-                        maybeWeapon == evt.Initiator.Body.EmptyHandWeapon || maybeWeapon2 == evt.Initiator.Body.EmptyHandWeapon ||
-                        (maybeWeapon != evt.Weapon && maybeWeapon2 != evt.Weapon) || flag) {
-                        return;
-                    }
-                    int rank = base.Fact.GetRank();
-                    int num = (rank <= 1) ? -4 : -2;
-                    int num2 = (rank <= 1) ? -8 : -2;
-                    penalty = (evt.Weapon != maybeWeapon) ? num2 : num;
-                    UnitPartWeaponTraining unitPartWeaponTraining = base.Owner.Get<UnitPartWeaponTraining>();
-                    bool flag2 = (base.Owner.State.Features.EffortlessDualWielding && unitPartWeaponTraining != null && unitPartWeaponTraining.IsSuitableWeapon(maybeWeapon2))
-                        || (prodigiousTwoWeaponFighting != null && base.Owner.Progression.Features.HasFact(prodigiousTwoWeaponFighting));
-                    if (!maybeWeapon2.Blueprint.IsLight && !maybeWeapon.Blueprint.Double && !flag2) {
-                        penalty += -2;
-                    }
-                    evt.AddBonus(penalty, base.Fact);
-                }
-                public override void OnEventDidTrigger(RuleCalculateAttackBonusWithoutTarget evt) { }
-
-                public void OnEventAboutToTrigger(RuleAttackWithWeapon evt) {
-                    if (!evt.IsFullAttack && penalty != 0) {
-                        evt.AddTemporaryModifier(evt.Initiator.Stats.AdditionalAttackBonus.AddModifier(-penalty, this, ModifierDescriptor.UntypedStackable));
-                    }
-                }
-                public void OnEventDidTrigger(RuleAttackWithWeapon evt) { }
-            }
-
-            [AllowMultipleComponents]
-            public class ShieldMasterPatch : GameLogicComponent, IInitiatorRulebookHandler<RuleCalculateDamage>, IInitiatorRulebookHandler<RuleCalculateAttackBonusWithoutTarget>, IInitiatorRulebookHandler<RuleCalculateWeaponStats> {
-                public void OnEventAboutToTrigger(RuleCalculateDamage evt) {
-                    if (!evt.Initiator.Body.SecondaryHand.HasShield || evt.DamageBundle.Weapon == null || !evt.DamageBundle.Weapon.IsShield) {
-                        return;
-                    }
-                    var armorEnhancementBonus = GameHelper.GetItemEnhancementBonus(evt.Initiator.Body.SecondaryHand.Shield.ArmorComponent);
-                    var weaponEnhancementBonus = GameHelper.GetItemEnhancementBonus(evt.Initiator.Body.SecondaryHand.Shield.WeaponComponent);
-                    var itemEnhancementBonus = armorEnhancementBonus - weaponEnhancementBonus;
-                    PhysicalDamage physicalDamage = evt.DamageBundle.WeaponDamage as PhysicalDamage;
-                    if (physicalDamage != null && itemEnhancementBonus > 0) {
-                        physicalDamage.Enchantment += itemEnhancementBonus;
-                        physicalDamage.EnchantmentTotal += itemEnhancementBonus;
-                    }
-                }
-                public void OnEventDidTrigger(RuleCalculateWeaponStats evt) { }
-
-                public void OnEventAboutToTrigger(RuleCalculateWeaponStats evt) {
-                    if (!evt.Initiator.Body.SecondaryHand.HasShield || evt.Weapon == null || !evt.Weapon.IsShield) {
-                        return;
-                    }
-                    var armorEnhancementBonus = GameHelper.GetItemEnhancementBonus(evt.Initiator.Body.SecondaryHand.Shield.ArmorComponent);
-                    var weaponEnhancementBonus = GameHelper.GetItemEnhancementBonus(evt.Initiator.Body.SecondaryHand.Shield.WeaponComponent);
-                    var itemEnhancementBonus = armorEnhancementBonus - weaponEnhancementBonus;
-                    if (itemEnhancementBonus > 0) {
-                        evt.AddBonusDamage(itemEnhancementBonus);
-                    }
-                }
-                public void OnEventDidTrigger(RuleCalculateDamage evt) { }
-
-                public void OnEventAboutToTrigger(RuleCalculateAttackBonusWithoutTarget evt) {
-                    if (!evt.Initiator.Body.SecondaryHand.HasShield || evt.Weapon == null || !evt.Weapon.IsShield) {
-                        return;
-                    }
-                    var armorEnhancementBonus = GameHelper.GetItemEnhancementBonus(evt.Initiator.Body.SecondaryHand.Shield.ArmorComponent);
-                    var weaponEnhancementBonus = GameHelper.GetItemEnhancementBonus(evt.Initiator.Body.SecondaryHand.Shield.WeaponComponent);
-                    var num = armorEnhancementBonus - weaponEnhancementBonus;
-                    if (num > 0) {
-                        evt.AddBonus(num, base.Fact);
-                    }
-                }
-                public void OnEventDidTrigger(RuleCalculateAttackBonusWithoutTarget evt) { }
-            }
-
-            private static void PatchBlueprints() {
-                var shieldMaster = ResourcesLibrary.TryGetBlueprint<BlueprintFeature>(Features.ShieldMasterGuid);
-                var twoWeaponFighting = ResourcesLibrary.TryGetBlueprint<BlueprintFeature>(MechanicsBlueprints.TwoWeaponFightingBasicMechanicsGuid);
-                for (int i = 0; i < twoWeaponFighting.ComponentsArray.Length; i++) {
-                    if (twoWeaponFighting.ComponentsArray[i] is TwoWeaponFightingAttackPenalty component) {
-                        twoWeaponFighting.ComponentsArray[i] = CraftMagicItems.Accessors.Create<TwoWeaponFightingAttackPenaltyPatch>(a => {
-                            a.name = component.name.Replace("TwoWeaponFightingAttackPenalty", "TwoWeaponFightingAttackPenaltyPatch");
-                            a.shieldMaster = shieldMaster;
-                            a.prodigiousTwoWeaponFighting = ResourcesLibrary.TryGetBlueprint<BlueprintFeature>(Features.ProdigiousTwoWeaponFightingGuid);
-                        });
-                    }
-                    Accessors.SetBlueprintUnitFactDisplayName(twoWeaponFighting, new L10NString("e32ce256-78dc-4fd0-bf15-21f9ebdf9921"));
-                }
-
-                for (int i = 0; i < shieldMaster.ComponentsArray.Length; i++) {
-                    if (shieldMaster.ComponentsArray[i] is ShieldMaster component) {
-                        shieldMaster.ComponentsArray[i] = CraftMagicItems.Accessors.Create<ShieldMasterPatch>(a => {
-                            a.name = component.name.Replace("ShieldMaster", "ShieldMasterPatch");
-                        });
-                    }
-                }
-
-                var lightShield = ResourcesLibrary.TryGetBlueprint<BlueprintWeaponType>(ItemQualityBlueprints.WeaponLightShieldGuid);
-                Accessors.SetBlueprintItemBaseDamage(lightShield, new DiceFormula(1, DiceType.D3));
-                var heavyShield = ResourcesLibrary.TryGetBlueprint<BlueprintWeaponType>(ItemQualityBlueprints.WeaponHeavyShieldGuid);
-                Accessors.SetBlueprintItemBaseDamage(heavyShield, new DiceFormula(1, DiceType.D4));
-
-                for (int i = 0; i < EnchantmentBlueprints.ItemEnchantmentGuids.Length; i++)
-                {
-                    var source = ResourcesLibrary.TryGetBlueprint<BlueprintItemEnchantment>(EnchantmentBlueprints.ItemEnchantmentGuids[i].WeaponEnchantmentGuid);
-                    var dest = ResourcesLibrary.TryGetBlueprint<BlueprintItemEnchantment>(EnchantmentBlueprints.ItemEnchantmentGuids[i].UnarmedEnchantmentGuid);
-                    Accessors.SetBlueprintItemEnchantmentEnchantName(dest, Accessors.GetBlueprintItemEnchantmentEnchantName(source));
-                    Accessors.SetBlueprintItemEnchantmentDescription(dest, Accessors.GetBlueprintItemEnchantmentDescription(source));
-                }
-
-                var longshankBane = ResourcesLibrary.TryGetBlueprint<BlueprintWeaponEnchantment>(EnchantmentBlueprints.LongshankBaneGuid);
-                if (longshankBane.ComponentsArray.Length >= 2 && longshankBane.ComponentsArray[1] is WeaponConditionalDamageDice conditional) {
-                    for (int i = 0; i < conditional.Conditions.Conditions.Length; i++) {
-                        if (conditional.Conditions.Conditions[i] is Kingmaker.Designers.EventConditionActionSystem.Conditions.HasFact condition) {
-                            var replace = ScriptableObject.CreateInstance<Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionHasFact>();
-                            replace.Fact = condition.Fact;
-                            replace.name = condition.name.Replace("HasFact", "ContextConditionHasFact");
-                            conditional.Conditions.Conditions[i] = replace;
-                        }
-                    }
-                }
-            }
-
-            private static void InitialiseMod() {
-                if (modEnabled) {
-                    PatchBlueprints();
-                    LeftHandVisualDisplayPatcher.PatchLeftHandedWeaponModels();
-                    InitialiseCraftingData();
-                    AddAllCraftingFeats();
-                }
-            }
-
-            [Harmony12.HarmonyPriority(Harmony12.Priority.Last)]
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix() {
-                if (!mainMenuStarted) {
-                    mainMenuStarted = true;
-                    InitialiseMod();
-                }
-            }
-
-            public static void ModEnabledChanged() {
-                if (!modEnabled) {
-                    // Reset everything InitialiseMod initialises
-                    LoadedData.ItemCraftingData = null;
-                    LoadedData.SubCraftingData.Clear();
-                    LoadedData.SpellIdToItem.Clear();
-                    LoadedData.TypeToItem.Clear();
-                    LoadedData.EnchantmentIdToItem.Clear();
-                    LoadedData.EnchantmentIdToCost.Clear();
-                    LoadedData.EnchantmentIdToRecipe.Clear();
-                } else if (mainMenuStarted) {
-                    // If the mod is enabled and we're past the Start of main menu, (re-)initialise.
-                    InitialiseMod();
-                }
-                L10N.SetEnabled(modEnabled);
-            }
-        }
-
-        // Fix issue in Owlcat's UI - ActionBarManager.Update does not refresh the Groups (spells/Actions/Belt)
-        [Harmony12.HarmonyPatch(typeof(ActionBarManager), "Update")]
-        // ReSharper disable once UnusedMember.Local
-        private static class ActionBarManagerUpdatePatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Prefix(ActionBarManager __instance) {
-                var mNeedReset = Accessors.GetActionBarManagerNeedReset(__instance);
-                if (mNeedReset) {
-                    var mSelected = Accessors.GetActionBarManagerSelected(__instance);
-                    __instance.Group.Set(mSelected);
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(BlueprintItemEquipmentUsable), "Cost", Harmony12.MethodType.Getter)]
-        // ReSharper disable once UnusedMember.Local
-        private static class BlueprintItemEquipmentUsableCostPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix(BlueprintItemEquipmentUsable __instance, ref int __result) {
-                if (__result == 0 && __instance.SpellLevel == 0) {
-                    // Owlcat's cost calculation doesn't handle level 0 spells properly.
-                    int chargeCost;
-                    switch (__instance.Type) {
-                        case UsableItemType.Wand:
-                            chargeCost = 15;
-                            break;
-                        case UsableItemType.Scroll:
-                            chargeCost = 25;
-                            break;
-                        case UsableItemType.Potion:
-                            chargeCost = 50;
-                            break;
-                        default:
-                            return;
-                    }
-                    __result = __instance.CasterLevel * chargeCost * __instance.Charges / 2;
-                }
-            }
-        }
-
-        // Load Variant spells into m_KnownSpellLevels
-        [Harmony12.HarmonyPatch(typeof(Spellbook), "PostLoad")]
-        // ReSharper disable once UnusedMember.Local
-        private static class SpellbookPostLoadPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix(Spellbook __instance) {
-                if (!modEnabled) {
-                    return;
-                }
-
-                var mKnownSpells = Accessors.GetSpellbookKnownSpells(__instance);
-                var mKnownSpellLevels = Accessors.GetSpellbookKnownSpellLevels(__instance);
-                for (var level = 0; level < mKnownSpells.Length; ++level) {
-                    foreach (var spell in mKnownSpells[level]) {
-                        if (spell.Blueprint.Variants != null) {
-                            foreach (var variant in spell.Blueprint.Variants) {
-                                mKnownSpellLevels[variant] = level;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Owlcat's code doesn't correctly detect that a variant spell is in a spellList when its parent spell is.
-        [Harmony12.HarmonyPatch(typeof(BlueprintAbility), "IsInSpellList")]
-        // ReSharper disable once UnusedMember.Global
-        public static class BlueprintAbilityIsInSpellListPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix(BlueprintAbility __instance, BlueprintSpellList spellList, ref bool __result) {
-                if (!__result && __instance.Parent != null && __instance.Parent != __instance) {
-                    __result = __instance.Parent.IsInSpellList(spellList);
-                }
-            }
-        }
-
         public static void AddBattleLogMessage(string message, object tooltip = null, Color? color = null) {
             var data = new LogDataManager.LogItemData(message, color ?? GameLogStrings.Instance.DefaultColor, tooltip, PrefixIcon.None);
             if (Game.Instance.UI.BattleLogManager) {
                 Game.Instance.UI.BattleLogManager.LogView.AddLogEntry(data);
             } else {
                 PendingLogItems.Add(data);
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(LogDataManager.LogItemData), "UpdateSize")]
-        // ReSharper disable once UnusedMember.Local
-        private static class LogItemDataUpdateSizePatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix() {
-                // Avoid null pointer exception when BattleLogManager not set.
-                return Game.Instance.UI.BattleLogManager != null;
-            }
-        }
-
-        // Add "pending" log items when the battle log becomes available again, so crafting messages sent when e.g. camping
-        // in the overland map are still shown eventually.
-        [Harmony12.HarmonyPatch(typeof(BattleLogManager), "Initialize")]
-        // ReSharper disable once UnusedMember.Local
-        private static class BattleLogManagerInitializePatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix() {
-                if (Enumerable.Any(PendingLogItems)) {
-                    foreach (var item in PendingLogItems) {
-                        item.UpdateSize();
-                        Game.Instance.UI.BattleLogManager.LogView.AddLogEntry(item);
-                    }
-
-                    PendingLogItems.Clear();
-                }
             }
         }
 
@@ -3376,7 +2930,7 @@ namespace CraftMagicItems {
             return missingCrafterPrerequisites;
         }
 
-        private static void WorkOnProjects(UnitDescriptor caster, bool returningToCapital) {
+        public static void WorkOnProjects(UnitDescriptor caster, bool returningToCapital) {
             if (!caster.IsPlayerFaction || caster.State.IsDead || caster.State.IsFinallyDead) {
                 return;
             }
@@ -3401,7 +2955,8 @@ namespace CraftMagicItems {
             var interval = Game.Instance.Player.GameTime.Subtract(timer.LastUpdated);
             var daysAvailableToCraft = (int) Math.Ceiling(interval.TotalDays);
             if (daysAvailableToCraft <= 0) {
-                if (isAdventuring) {
+                if (isAdventuring)
+                {
                     AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-not-full-day"));
                 }
 
@@ -3472,8 +3027,8 @@ namespace CraftMagicItems {
                         // If the item type has mandatory prerequisites and some are missing, move on to the next project.
                         continue;
                     }
-
-                    AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-spell", missingSpellNames,
+                    
+AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-spell", missingSpellNames,
                         DifficultyClass.MissingPrerequisiteDCModifier * missing));
                 }
                 var missing2 = CheckFeatPrerequisites(project, caster, out var missingFeats);
@@ -3539,8 +3094,8 @@ namespace CraftMagicItems {
                                         daysCrafting = day;
                                         break;
                                     }
-
-                                    AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-spell", spell.Name, DifficultyClass.MissingPrerequisiteDCModifier));
+                                    
+                AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-spell", spell.Name, DifficultyClass.MissingPrerequisiteDCModifier));
                                     if (skillCheck < dc) {
                                         // Can no longer make progress
                                         AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-dc-too-high", project.ResultItem.Name,
@@ -3586,8 +3141,10 @@ namespace CraftMagicItems {
                     if (project.ItemType == BondedItemRitual) {
                         AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-bonding-ritual-complete", project.ResultItem.Name), project.ResultItem);
                         BondWithObject(project.Crafter, project.ResultItem);
-                    } else {
-                        AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-crafting-complete", project.ResultItem.Name), project.ResultItem);
+                    } else
+                    {
+                        
+    AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-crafting-complete", project.ResultItem.Name), project.ResultItem);
                         CraftItem(project.ResultItem, project.UpgradeItem);
                     }
                     timer.CraftingProjects.Remove(project);
@@ -3613,30 +3170,6 @@ namespace CraftMagicItems {
             if (daysAvailableToCraft > 0) {
                 // They didn't use up all available days - reset the time they can start crafting to now.
                 timer.LastUpdated = Game.Instance.Player.GameTime;
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(CapitalCompanionLogic), "OnFactActivate")]
-        // ReSharper disable once UnusedMember.Local
-        private static class CapitalCompanionLogicOnFactActivatePatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Prefix() {
-                // Trigger project work on companions left behind in the capital, with a flag saying the party wasn't around while they were working.
-                foreach (var companion in Game.Instance.Player.RemoteCompanions) {
-                    if (companion.Value != null) {
-                        WorkOnProjects(companion.Value.Descriptor, true);
-                    }
-                }
-            }
-        }
-
-        // Make characters in the party work on their crafting projects when they rest.
-        [Harmony12.HarmonyPatch(typeof(RestController), "ApplyRest")]
-        // ReSharper disable once UnusedMember.Local
-        private static class RestControllerApplyRestPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Prefix(UnitDescriptor unit) {
-                WorkOnProjects(unit, false);
             }
         }
 
@@ -3677,7 +3210,7 @@ namespace CraftMagicItems {
             }
         }
 
-        private static void UpgradeSave(Version version) {
+        public static void UpgradeSave(Version version) {
             foreach (var lootItem in LoadedData.CustomLootItems) {
                 var firstTime = (version == null || version.CompareTo(lootItem.AddInVersion) < 0);
                 var item = ResourcesLibrary.TryGetBlueprint<BlueprintItem>(lootItem.AssetGuid);
@@ -3685,705 +3218,6 @@ namespace CraftMagicItems {
                     Harmony12.FileLog.Log($"!!! Loot item not created: {lootItem.AssetGuid}");
                 } else {
                     AddToLootTables(item, lootItem.LootTables, firstTime);
-                }
-            }
-        }
-
-        // After loading a save, perform various backward compatibility and initialisation operations.
-        [Harmony12.HarmonyPatch(typeof(Player), "PostLoad")]
-        // ReSharper disable once UnusedMember.Local
-        private static class PlayerPostLoadPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix() {
-                ItemUpgradeProjects.Clear();
-                ItemCreationProjects.Clear();
-
-                var characterList = UIUtility.GetGroup(true);
-                foreach (var character in characterList) {
-                    // If the mod is disabled, this will clean up crafting timer "buff" from all casters.
-                    var timer = GetCraftingTimerComponentForCaster(character.Descriptor, character.IsMainCharacter);
-                    var bondedItemComponent = GetBondedItemComponentForCaster(character.Descriptor);
-
-                    if (!modEnabled) {
-                        continue;
-                    }
-
-                    if (timer != null) {
-                        foreach (var project in timer.CraftingProjects) {
-                            if (project.ItemBlueprint != null) {
-                                // Migrate all projects using ItemBlueprint to use ResultItem
-                                var craftingData = LoadedData.ItemCraftingData.First(data => data.Name == project.ItemType);
-                                project.ResultItem = BuildItemEntity(project.ItemBlueprint, craftingData, character);
-                                project.ItemBlueprint = null;
-                            }
-
-                            project.Crafter = character;
-                            if (!project.ResultItem.HasUniqueVendor) {
-                                // Set "vendor" of item if it's already in progress
-                                project.ResultItem.SetVendorIfNull(character);
-                            }
-                            project.ResultItem.PostLoad();
-                            if (project.UpgradeItem == null) {
-                                ItemCreationProjects.Add(project);
-                            } else {
-                                ItemUpgradeProjects[project.UpgradeItem] = project;
-                                project.UpgradeItem.PostLoad();
-                            }
-                        }
-
-                        if (character.IsMainCharacter) {
-                            UpgradeSave(string.IsNullOrEmpty(timer.Version) ? null : Version.Parse(timer.Version));
-                            timer.Version = ModEntry.Version.ToString();
-                        }
-                    }
-
-                    if (bondedItemComponent != null) {
-                        bondedItemComponent.ownerItem?.PostLoad();
-                        bondedItemComponent.everyoneElseItem?.PostLoad();
-                    }
-
-                    // Retroactively give character any crafting feats in their past progression data which they don't actually have
-                    // (e.g. Alchemists getting Brew Potion)
-                    foreach (var characterClass in character.Descriptor.Progression.Classes) {
-                        foreach (var levelData in characterClass.CharacterClass.Progression.LevelEntries) {
-                            if (levelData.Level <= characterClass.Level) {
-                                foreach (var feature in levelData.Features.OfType<BlueprintFeature>()) {
-                                    if (feature.AssetGuid.Contains("#CraftMagicItems(feat=") && !CharacterHasFeat(character, feature.AssetGuid)) {
-                                        character.Descriptor.Progression.Features.AddFeature(feature);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(Game), "OnAreaLoaded")]
-        // ReSharper disable once UnusedMember.Local
-        private static class GameOnAreaLoadedPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix() {
-                if (CustomBlueprintBuilder.DidDowngrade) {
-                    UIUtility.ShowMessageBox("Craft Magic Items is disabled.  All your custom enchanted items and crafting feats have been replaced with " +
-                                             "vanilla versions.", DialogMessageBox.BoxType.Message, null);
-                    CustomBlueprintBuilder.Reset();
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponParametersAttackBonus), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponParametersAttackBonusOnEventAboutToTriggerPatch {
-            private static bool Prefix(WeaponParametersAttackBonus __instance, RuleCalculateAttackBonusWithoutTarget evt) {
-                if (evt.Weapon != null && __instance.OnlyFinessable && evt.Weapon.Blueprint.Type.Category.HasSubCategory(WeaponSubCategory.Finessable) &&
-                    IsOversized(evt.Weapon.Blueprint)) {
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponParametersDamageBonus), "OnEventAboutToTrigger", new Type[] { typeof(RuleCalculateWeaponStats) })]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponParametersDamageBonusOnEventAboutToTriggerPatch {
-            private static bool Prefix(WeaponParametersDamageBonus __instance, RuleCalculateWeaponStats evt) {
-                if (evt.Weapon != null && __instance.OnlyFinessable && evt.Weapon.Blueprint.Type.Category.HasSubCategory(WeaponSubCategory.Finessable) &&
-                    IsOversized(evt.Weapon.Blueprint)) {
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(AttackStatReplacement), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class AttackStatReplacementOnEventAboutToTriggerPatch {
-            private static bool Prefix(AttackStatReplacement __instance, RuleCalculateAttackBonusWithoutTarget evt) {
-                if (evt.Weapon != null && __instance.SubCategory == WeaponSubCategory.Finessable &&
-                    evt.Weapon.Blueprint.Type.Category.HasSubCategory(WeaponSubCategory.Finessable) && IsOversized(evt.Weapon.Blueprint)) {
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(DamageGrace), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class DamageGraceOnEventAboutToTriggerPatch {
-            private static bool Prefix(DamageGrace __instance, RuleCalculateWeaponStats evt) {
-                if (evt.Weapon != null && evt.Weapon.Blueprint.Type.Category.HasSubCategory(WeaponSubCategory.Finessable) &&
-                    IsOversized(evt.Weapon.Blueprint)) {
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(UIUtilityItem), "GetQualities")]
-        // ReSharper disable once UnusedMember.Local
-        private static class UIUtilityItemGetQualitiesPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix(ItemEntity item, ref string __result) {
-                if (!item.IsIdentified) {
-                    return;
-                }
-                ItemEntityWeapon itemEntityWeapon = item as ItemEntityWeapon;
-                if (itemEntityWeapon == null) {
-                    return;
-                }
-                WeaponCategory category = itemEntityWeapon.Blueprint.Category;
-                if (category.HasSubCategory(WeaponSubCategory.Finessable) && IsOversized(itemEntityWeapon.Blueprint)) {
-                    __result = __result.Replace(LocalizedTexts.Instance.WeaponSubCategories.GetText(WeaponSubCategory.Finessable), "");
-                    __result = __result.Replace(",  ,", ",");
-                    char[] charsToTrim = { ',', ' ' };
-                    __result = __result.Trim(charsToTrim);
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(UIUtilityItem), "FillArmorEnchantments")]
-        // ReSharper disable once UnusedMember.Local
-        private static class UIUtilityItemFillArmorEnchantmentsPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix(TooltipData data, ItemEntityShield armor) {
-                if (armor.IsIdentified) {
-                    foreach (var itemEnchantment in armor.Enchantments) {
-                        itemEnchantment.Blueprint.CallComponents<AddStatBonusEquipment>(c => {
-                            if (c.Descriptor != ModifierDescriptor.ArmorEnhancement && c.Descriptor != ModifierDescriptor.ShieldEnhancement && !data.StatBonus.ContainsKey(c.Stat)) {
-                                data.StatBonus.Add(c.Stat, UIUtility.AddSign(c.Value));
-                            }
-                        });
-                        var component = itemEnchantment.Blueprint.GetComponent<AllSavesBonusEquipment>();
-                        if (component != null) {
-                            StatType[] saves = { StatType.SaveReflex, StatType.SaveWill, StatType.SaveFortitude };
-                            foreach (var save in saves) {
-                                if (!data.StatBonus.ContainsKey(save)) {
-                                    data.StatBonus.Add(save, UIUtility.AddSign(component.Value));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(UIUtilityItem), "FillEnchantmentDescription")]
-        // ReSharper disable once UnusedMember.Local
-        private static class UIUtilityItemFillEnchantmentDescriptionPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(ItemEntity item, TooltipData data, ref string __result) {
-                string text = string.Empty;
-                if (item is ItemEntityShield shield && shield.IsIdentified) {
-                    // It appears that shields are not properly identified when found.
-                    shield.ArmorComponent.Identify();
-                    shield.WeaponComponent?.Identify();
-                    return true;
-                } else if (item.Blueprint.ItemType == ItemsFilter.ItemType.Neck && ItemPlusEquivalent(item.Blueprint) > 0) {
-                    if (item.IsIdentified) {
-                        foreach (ItemEnchantment itemEnchantment in item.Enchantments) {
-                            itemEnchantment.Blueprint.CallComponents<AddStatBonusEquipment>(c => {
-                                if (!data.StatBonus.ContainsKey(c.Stat)) {
-                                    data.StatBonus.Add(c.Stat, UIUtility.AddSign(c.Value));
-                                }
-                            });
-                            if (!data.Texts.ContainsKey(TooltipElement.Qualities)) {
-                                data.Texts[TooltipElement.Qualities] = Accessors.CallUIUtilityItemGetQualities(item);
-                            }
-                            if (!string.IsNullOrEmpty(itemEnchantment.Blueprint.Description)) {
-                                text += string.Format("<b><align=\"center\">{0}</align></b>\n", itemEnchantment.Blueprint.Name);
-                                text = text + itemEnchantment.Blueprint.Description + "\n\n";
-                            }
-                        }
-                        if (item.Enchantments.Any<ItemEnchantment>() && !data.Texts.ContainsKey(TooltipElement.Qualities)) {
-                            data.Texts[TooltipElement.Qualities] = GetEnhancementBonus(item);
-                        }
-                        if (GetItemEnhancementBonus(item) > 0) {
-                            data.Texts[TooltipElement.Enhancement] = GetEnhancementBonus(item);
-                        }
-                    }
-                    __result = text;
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-            private static string GetEnhancementBonus(ItemEntity item) {
-                if (!item.IsIdentified) {
-                    return string.Empty;
-                }
-                int itemEnhancementBonus = GetItemEnhancementBonus(item);
-                return (itemEnhancementBonus == 0) ? string.Empty : UIUtility.AddSign(itemEnhancementBonus);
-            }
-            public static int GetItemEnhancementBonus(ItemEntity item) {
-                return item.Enchantments.SelectMany((ItemEnchantment f) => f.SelectComponents<EquipmentWeaponTypeEnhancement>()).Aggregate(0, (int s, EquipmentWeaponTypeEnhancement e) => s + e.Enhancement);
-            }
-
-            private static void Postfix(ItemEntity item, TooltipData data, ref string __result) {
-                if (item is ItemEntityShield shield) {
-                    if (shield.WeaponComponent != null) {
-                        TooltipData tmp = new TooltipData();
-                        string result = Accessors.CallUIUtilityItemFillEnchantmentDescription(shield.WeaponComponent, tmp);
-                        if (!string.IsNullOrEmpty(result)) {
-                            __result += $"<b><align=\"center\">{LocalizedStringBlueprints.ShieldBashLocalized}</align></b>\n";
-                            __result += result;
-                        }
-                        data.Texts[TooltipElement.AttackType] = tmp.Texts[TooltipElement.AttackType];
-                        data.Texts[TooltipElement.ProficiencyGroup] = tmp.Texts[TooltipElement.ProficiencyGroup];
-                        if (tmp.Texts.ContainsKey(TooltipElement.Qualities) && !string.IsNullOrEmpty(tmp.Texts[TooltipElement.Qualities])) {
-                            if (data.Texts.ContainsKey(TooltipElement.Qualities)) {
-                                data.Texts[TooltipElement.Qualities] += $",  {LocalizedStringBlueprints.ShieldBashLocalized}:  {tmp.Texts[TooltipElement.Qualities]}";
-                            } else {
-                                data.Texts[TooltipElement.Qualities] = $"{LocalizedStringBlueprints.ShieldBashLocalized}:  {tmp.Texts[TooltipElement.Qualities]}";
-                            }
-                        }
-                        data.Texts[TooltipElement.Damage] = tmp.Texts[TooltipElement.Damage];
-                        if (tmp.Texts.ContainsKey(TooltipElement.EquipDamage)) {
-                            data.Texts[TooltipElement.EquipDamage] = tmp.Texts[TooltipElement.EquipDamage];
-                        }
-                        if (tmp.Texts.ContainsKey(TooltipElement.PhysicalDamage)) {
-                            data.Texts[TooltipElement.PhysicalDamage] = tmp.Texts[TooltipElement.PhysicalDamage];
-                            data.PhysicalDamage = tmp.PhysicalDamage;
-                        }
-                        data.Energy = tmp.Energy;
-                        data.OtherDamage = tmp.OtherDamage;
-                        data.Texts[TooltipElement.Range] = tmp.Texts[TooltipElement.Range];
-                        data.Texts[TooltipElement.CriticalHit] = tmp.Texts[TooltipElement.CriticalHit];
-                        if (tmp.Texts.ContainsKey(TooltipElement.Enhancement)) {
-                            data.Texts[TooltipElement.Enhancement] = tmp.Texts[TooltipElement.Enhancement];
-                        }
-                    }
-                    if (GameHelper.GetItemEnhancementBonus(shield.ArmorComponent) > 0) {
-                        if (data.Texts.ContainsKey(TooltipElement.Damage)) {
-                            data.Texts[Enum.GetValues(typeof(TooltipElement)).Cast<TooltipElement>().Max() + 1] = UIUtility.AddSign(GameHelper.GetItemEnhancementBonus(shield.ArmorComponent));
-                        } else {
-                            data.Texts[TooltipElement.Enhancement] = UIUtility.AddSign(GameHelper.GetItemEnhancementBonus(shield.ArmorComponent));
-                        }
-                    }
-                }
-                if (data.Texts.ContainsKey(TooltipElement.Qualities)) {
-                    data.Texts[TooltipElement.Qualities] = data.Texts[TooltipElement.Qualities].Replace(" ,", ",");
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(UIUtility), "IsMagicItem")]
-        // ReSharper disable once UnusedMember.Local
-        private static class UIUtilityIsMagicItem {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix(ItemEntity item, ref bool __result) {
-                if (__result == false && item != null && item.IsIdentified && item is ItemEntityShield shield && shield.WeaponComponent != null) {
-                    __result = ItemPlusEquivalent(shield.WeaponComponent.Blueprint) > 0;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(ItemEntity), "VendorDescription", Harmony12.MethodType.Getter)]
-        // ReSharper disable once UnusedMember.Local
-        private static class ItemEntityVendorDescriptionPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(ItemEntity __instance, ref string __result) {
-                // If the "vendor" is a party member, return that the item was crafted rather than from a merchant
-                if (__instance.Vendor != null && __instance.Vendor.IsPlayerFaction) {
-                    __result = LocalizationHelper.FormatLocalizedString("craftMagicItems-crafted-source-description", __instance.Vendor.CharacterName);
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        // Owlcat's code doesn't filter out undamaged characters, so it will always return someone.  This meant that with the "auto-cast healing" camping
-        // option enabled on, healers would burn all their spell slots healing undamaged characters when they started resting, leaving them no spells to cast
-        // when crafting.  Change it so it returns null if the most damaged character is undamaged.
-        [Harmony12.HarmonyPatch(typeof(UnitUseSpellsOnRest), "GetUnitWithMaxDamage")]
-        // ReSharper disable once UnusedMember.Local
-        private static class UnitUseSpellsOnRestGetUnitWithMaxDamagePatch {
-            // ReSharper disable once UnusedMember.Local
-            private static void Postfix(ref UnitEntityData __result) {
-                if (__result.Damage == 0 && (UnitPartDualCompanion.GetPair(__result)?.Damage ?? 0) == 0) {
-                    __result = null;
-                }
-            }
-        }
-
-        private static bool EquipmentEnchantmentValid(ItemEntityWeapon weapon, ItemEntity owner) {
-            if ((weapon == owner) ||
-                (weapon != null && (weapon.Blueprint.IsNatural || weapon.Blueprint.IsUnarmed))) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponEnergyDamageDice), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponEnergyDamageDiceOnEventAboutToTriggerPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(WeaponEnergyDamageDice __instance, RuleCalculateWeaponStats evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (EquipmentEnchantmentValid(evt.Weapon, logic.Owner)) {
-                        DamageDescription item = new DamageDescription
-                        {
-                            TypeDescription = new DamageTypeDescription
-                            {
-                                Type = DamageType.Energy,
-                                Energy = __instance.Element
-                            },
-                            Dice = __instance.EnergyDamageDice
-                        };
-                        evt.DamageDescription.Add(item);
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponEnergyBurst), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponEnergyBurstOnEventAboutToTriggerPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(WeaponEnergyBurst __instance, RuleDealDamage evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (logic.Owner == null || evt.AttackRoll == null || !evt.AttackRoll.IsCriticalConfirmed || evt.AttackRoll.FortificationNegatesCriticalHit || evt.DamageBundle.WeaponDamage == null) {
-                        return false;
-                    }
-                    if (EquipmentEnchantmentValid(evt.DamageBundle.Weapon, logic.Owner)) {
-                        RuleCalculateWeaponStats ruleCalculateWeaponStats = Rulebook.Trigger<RuleCalculateWeaponStats>(new RuleCalculateWeaponStats(Game.Instance.DefaultUnit, evt.DamageBundle.Weapon, null));
-                        DiceFormula dice = new DiceFormula(Math.Max(ruleCalculateWeaponStats.CriticalMultiplier - 1, 1), __instance.Dice);
-                        evt.DamageBundle.Add(new EnergyDamage(dice, __instance.Element));
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponExtraAttack), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponExtraAttackOnEventAboutToTriggerPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(WeaponExtraAttack __instance, RuleCalculateAttacksCount evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (logic.Owner is ItemEntityWeapon) {
-                        evt.AddExtraAttacks(__instance.Number, __instance.Haste, __instance.Owner);
-                    } else if (evt.Initiator.GetFirstWeapon() != null &&
-                        (evt.Initiator.GetFirstWeapon().Blueprint.IsNatural || evt.Initiator.GetFirstWeapon().Blueprint.IsUnarmed)) {
-                        evt.AddExtraAttacks(__instance.Number, __instance.Haste);
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponDamageAgainstAlignment), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponDamageAgainstAlignmentOnEventAboutToTriggerPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(WeaponDamageAgainstAlignment __instance, RulePrepareDamage evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (evt.DamageBundle.WeaponDamage == null) {
-                        return false;
-                    }
-                    evt.DamageBundle.WeaponDamage.AddAlignment(__instance.WeaponAlignment);
-
-                    if (evt.Target.Descriptor.Alignment.Value.HasComponent(__instance.EnemyAlignment) && EquipmentEnchantmentValid(evt.DamageBundle.Weapon, logic.Owner)) {
-                        int rollsCount = __instance.Value.DiceCountValue.Calculate(logic.Context);
-                        int bonusDamage = __instance.Value.BonusValue.Calculate(logic.Context);
-                        EnergyDamage energyDamage = new EnergyDamage(new DiceFormula(rollsCount, __instance.Value.DiceType), __instance.DamageType);
-                        energyDamage.AddBonusTargetRelated(bonusDamage);
-                        evt.DamageBundle.Add(energyDamage);
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponConditionalEnhancementBonus), "OnEventAboutToTrigger", new Type[] { typeof(RuleCalculateWeaponStats) })]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponConditionalEnhancementBonusOnEventAboutToTriggerRuleCalculateWeaponStatsPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(WeaponConditionalEnhancementBonus __instance, RuleCalculateWeaponStats evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (__instance.IsBane) {
-                        if (logic.Owner.Enchantments.Any((ItemEnchantment e) => e.Get<SuppressBane>())) {
-                            return false;
-                        }
-                    }
-                    if (__instance.CheckWielder) {
-                        using (logic.Enchantment.Context.GetDataScope(evt.Initiator)) {
-                            if (EquipmentEnchantmentValid(evt.Weapon, logic.Owner) && __instance.Conditions.Check(null)) {
-                                evt.AddBonusDamage(__instance.EnhancementBonus);
-                                evt.Enhancement += __instance.EnhancementBonus;
-                                evt.EnhancementTotal += __instance.EnhancementBonus;
-                            }
-                        }
-                    } else if (evt.AttackWithWeapon != null) {
-                        using (logic.Enchantment.Context.GetDataScope(evt.AttackWithWeapon.Target)) {
-                            if (EquipmentEnchantmentValid(evt.Weapon, logic.Owner) && __instance.Conditions.Check(null)) {
-                                evt.AddBonusDamage(__instance.EnhancementBonus);
-                                evt.Enhancement += __instance.EnhancementBonus;
-                                evt.EnhancementTotal += __instance.EnhancementBonus;
-                            }
-                        }
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponConditionalEnhancementBonus), "OnEventAboutToTrigger", new Type[] { typeof(RuleCalculateAttackBonus) })]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponConditionalEnhancementBonusOnEventAboutToTriggerRuleCalculateAttackBonusPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(WeaponConditionalEnhancementBonus __instance, RuleCalculateAttackBonus evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (__instance.IsBane) {
-                        if (logic.Owner.Enchantments.Any((ItemEnchantment e) => e.Get<SuppressBane>())) {
-                            return false;
-                        }
-                    }
-                    if (__instance.CheckWielder) {
-                        using (logic.Enchantment.Context.GetDataScope(evt.Initiator)) {
-                            if (EquipmentEnchantmentValid(evt.Weapon, logic.Owner) && __instance.Conditions.Check(null)) {
-                                evt.AddBonus(__instance.EnhancementBonus, logic.Fact);
-                            }
-                        }
-                    } else {
-                        using (logic.Enchantment.Context.GetDataScope(evt.Target)) {
-                            if (EquipmentEnchantmentValid(evt.Weapon, logic.Owner) && __instance.Conditions.Check(null)) {
-                                evt.AddBonus(__instance.EnhancementBonus, logic.Fact);
-                            }
-                        }
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponConditionalDamageDice), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponConditionalDamageDiceOnEventAboutToTriggerPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(WeaponConditionalDamageDice __instance, RulePrepareDamage evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (evt.DamageBundle.WeaponDamage == null) {
-                        return false;
-                    }
-                    if (__instance.IsBane) {
-                        if (logic.Owner.Enchantments.Any((ItemEnchantment e) => e.Get<SuppressBane>())) {
-                            return false;
-                        }
-                    }
-                    if (__instance.CheckWielder) {
-                        using (logic.Enchantment.Context.GetDataScope(logic.Owner.Wielder.Unit)) {
-                            if (EquipmentEnchantmentValid(evt.DamageBundle.Weapon, logic.Owner) && __instance.Conditions.Check(null)) {
-                                BaseDamage damage = __instance.Damage.CreateDamage();
-                                evt.DamageBundle.Add(damage);
-                            }
-                        }
-                    } else {
-                        using (logic.Enchantment.Context.GetDataScope(evt.Target)) {
-                            if (EquipmentEnchantmentValid(evt.DamageBundle.Weapon, logic.Owner) && __instance.Conditions.Check(null)) {
-                                BaseDamage damage2 = __instance.Damage.CreateDamage();
-                                evt.DamageBundle.Add(damage2);
-                            }
-                        }
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(BrilliantEnergy), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class BrilliantEnergyOnEventAboutToTriggerPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(BrilliantEnergy __instance, RuleCalculateAC evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (evt.Reason.Item is ItemEntityWeapon weapon && EquipmentEnchantmentValid(weapon, logic.Owner)) {
-                        evt.BrilliantEnergy = logic.Fact;
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(MissAgainstFactOwner), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class MissAgainstFactOwnerOnEventAboutToTriggerPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(MissAgainstFactOwner __instance, RuleAttackRoll evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (EquipmentEnchantmentValid(evt.Weapon, logic.Owner)) {
-                        foreach (BlueprintUnitFact blueprint in __instance.Facts) {
-                            if (evt.Target.Descriptor.HasFact(blueprint)) {
-                                evt.AutoMiss = true;
-                                return false;
-                            }
-                        }
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(WeaponReality), "OnEventAboutToTrigger")]
-        // ReSharper disable once UnusedMember.Local
-        private static class WeaponRealityOnEventAboutToTriggerPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(WeaponReality __instance, RulePrepareDamage evt) {
-                if (__instance is ItemEnchantmentLogic logic) {
-                    if (evt.DamageBundle.WeaponDamage == null) {
-                        return false;
-                    }
-                    if (EquipmentEnchantmentValid(evt.DamageBundle.Weapon, logic.Owner)) {
-                        evt.DamageBundle.WeaponDamage.Reality |= __instance.Reality;
-                    }
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(AddInitiatorAttackRollTrigger), "CheckConditions")]
-        // ReSharper disable once UnusedMember.Local
-        private static class AddInitiatorAttackRollTriggerCheckConditionsPatch {
-            // ReSharper disable once UnusedMember.Local
-            private static bool Prefix(AddInitiatorAttackRollTrigger __instance, RuleAttackRoll evt, ref bool __result) {
-                if (__instance is GameLogicComponent logic) {
-                    ItemEnchantment itemEnchantment = logic.Fact as ItemEnchantment;
-                    ItemEntity itemEntity = (itemEnchantment != null) ? itemEnchantment.Owner : null;
-                    RuleAttackWithWeapon ruleAttackWithWeapon = evt.Reason.Rule as RuleAttackWithWeapon;
-                    ItemEntityWeapon itemEntityWeapon = (ruleAttackWithWeapon != null) ? ruleAttackWithWeapon.Weapon : null;
-                    __result = (itemEntity == null || itemEntity == itemEntityWeapon || evt.Weapon.Blueprint.IsNatural || evt.Weapon.Blueprint.IsUnarmed) &&
-                        (!__instance.CheckWeapon || (itemEntityWeapon != null && __instance.WeaponCategory == itemEntityWeapon.Blueprint.Category)) &&
-                        (!__instance.OnlyHit || evt.IsHit) && (!__instance.CriticalHit || (evt.IsCriticalConfirmed && !evt.FortificationNegatesCriticalHit)) &&
-                        (!__instance.SneakAttack || (evt.IsSneakAttack && !evt.FortificationNegatesSneakAttack)) &&
-                        (__instance.AffectFriendlyTouchSpells || evt.Initiator.IsEnemy(evt.Target) || evt.Weapon.Blueprint.Type.AttackType != AttackType.Touch);
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(RuleCalculateAttacksCount), "OnTrigger")]
-        private static class RuleCalculateAttacksCountOnTriggerPatch {
-            private static void Postfix(RuleCalculateAttacksCount __instance) {
-                int num = __instance.Initiator.Stats.BaseAttackBonus;
-                int val = Math.Min(Math.Max(0, num / 5 - ((num % 5 != 0) ? 0 : 1)), 3);
-                HandSlot primaryHand = __instance.Initiator.Body.PrimaryHand;
-                HandSlot secondaryHand = __instance.Initiator.Body.SecondaryHand;
-                ItemEntityWeapon maybeWeapon = primaryHand.MaybeWeapon;
-                BlueprintItemWeapon blueprintItemWeapon = (maybeWeapon != null) ? maybeWeapon.Blueprint : null;
-                BlueprintItemWeapon blueprintItemWeapon2;
-                if (secondaryHand.MaybeShield != null) {
-                    if (__instance.Initiator.Descriptor.State.Features.ShieldBash) {
-                        ItemEntityWeapon weaponComponent = secondaryHand.MaybeShield.WeaponComponent;
-                        blueprintItemWeapon2 = ((weaponComponent != null) ? weaponComponent.Blueprint : null);
-                    } else {
-                        blueprintItemWeapon2 = null;
-                    }
-                } else {
-                    ItemEntityWeapon maybeWeapon2 = secondaryHand.MaybeWeapon;
-                    blueprintItemWeapon2 = ((maybeWeapon2 != null) ? maybeWeapon2.Blueprint : null);
-                }
-                if ((primaryHand.MaybeWeapon == null || !primaryHand.MaybeWeapon.HoldInTwoHands) && (blueprintItemWeapon == null || blueprintItemWeapon.IsUnarmed) && blueprintItemWeapon2 && !blueprintItemWeapon2.IsUnarmed) {
-                    __instance.SecondaryHand.PenalizedAttacks += Math.Max(0, val);
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(ItemEntityWeapon), "HoldInTwoHands", Harmony12.MethodType.Getter)]
-        private static class ItemEntityWeaponHoldInTwoHandsPatch {
-            private static void Postfix(ItemEntityWeapon __instance, ref bool __result) {
-                if (!__result) {
-                    if (__instance.IsShield && __instance.Blueprint.IsOneHandedWhichCanBeUsedWithTwoHands && __instance.Wielder != null) {
-                        HandSlot handSlot = __instance.Wielder.Body.PrimaryHand;
-                        __result = handSlot != null && !handSlot.HasItem;
-                    }
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(DescriptionTemplatesItem), "ItemEnergy")]
-        private static class DescriptionTemplatesItemItemEnergyPatch {
-            private static void Postfix(TooltipData data, bool __result) {
-                if (__result) {
-                    if (data.Energy.Count > 0) {
-                        data.Energy.Clear();
-                    }
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(DescriptionTemplatesItem), "ItemEnhancement")]
-        private static class DescriptionTemplatesItemItemEnhancementPatch {
-            private static void Postfix(TooltipData data) {
-                if (data.Texts.ContainsKey(Enum.GetValues(typeof(TooltipElement)).Cast<TooltipElement>().Max() + 1)) {
-                    data.Texts[TooltipElement.Enhancement] = data.Texts[Enum.GetValues(typeof(TooltipElement)).Cast<TooltipElement>().Max() + 1];
-                } else if (data.Texts.ContainsKey(TooltipElement.Enhancement)) {
-                    data.Texts.Remove(TooltipElement.Enhancement);
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(DescriptionTemplatesItem), "ItemEnergyResisit")]
-        private static class DescriptionTemplatesItemItemEnergyResisitPatch {
-            private static bool Prefix(ref bool __result) {
-                __result = false;
-                return false;
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(UnitViewHandSlotData), "OwnerWeaponScale", Harmony12.MethodType.Getter)]
-        private static class UnitViewHandSlotDataWeaponScalePatch {
-            private static void Postfix(UnitViewHandSlotData __instance, ref float __result) {
-                if (__instance.VisibleItem is ItemEntityWeapon weapon && !weapon.Blueprint.AssetGuid.Contains(",visual=")) {
-                    var enchantment = GetEnchantments(weapon.Blueprint).FirstOrDefault(e => e.AssetGuid.StartsWith(ItemQualityBlueprints.OversizedGuid));
-                    if (enchantment != null) {
-                        var component = enchantment.GetComponent<WeaponBaseSizeChange>();
-                        if (component != null) {
-                            if (component.SizeCategoryChange > 0) {
-                                __result *= 4.0f / 3.0f;
-                            } else if (component.SizeCategoryChange < 0) {
-                                __result *= 0.75f;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        [Harmony12.HarmonyPatch(typeof(ActivatableAbility), "OnEventDidTrigger", new Type[] { typeof(RuleAttackWithWeaponResolve) })]
-        private static class ActivatableAbilityOnEventDidTriggerRuleAttackWithWeaponResolvePatch {
-            private static bool Prefix(ActivatableAbility __instance, RuleAttackWithWeaponResolve evt) {
-                if (evt.Damage != null && evt.AttackRoll.IsHit) {
-                    return false;
-                } else {
-                    return true;
                 }
             }
         }
