@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using CraftMagicItems.Localization;
 using Harmony12;
 using Kingmaker;
 using Kingmaker.Blueprints;

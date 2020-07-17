@@ -26,6 +26,7 @@ using Kingmaker.View.Animation;
 using Kingmaker.Utility;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using CraftMagicItems.Localization;
 
 namespace CraftMagicItems.Patches
 {

@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using CraftMagicItems.Config;
 using CraftMagicItems.Constants;
+using CraftMagicItems.Localization;
 using CraftMagicItems.Patches;
 using CraftMagicItems.UI;
 using CraftMagicItems.UI.Sections;
@@ -3133,7 +3134,7 @@ namespace CraftMagicItems {
                     // If the mod is enabled and we're past the Start of main menu, (re-)initialise.
                     InitialiseMod();
                 }
-                L10n.SetEnabled(modEnabled);
+                L10N.SetEnabled(modEnabled);
             }
         }
 
