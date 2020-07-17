@@ -1758,7 +1758,7 @@ namespace CraftMagicItems {
             var itemTypeNames = itemTypes.Select(data => new L10NString(data.ParentNameId ?? data.NameId).ToString()).ToArray();
             var selectedItemTypeIndex = Selections.UpgradingBlueprint == null
                 ? DrawSelectionUserInterfaceElements("Mundane Crafting: ", itemTypeNames, 6, ref Selections.SelectedCustomName)
-                : GetSelectionIndex("Mundane Crafting: ");
+                : Selections.GetSelectionIndex("Mundane Crafting: ");
 
             var selectedCraftingData = itemTypes[selectedItemTypeIndex];
             if (selectedCraftingData.ParentNameId != null) {
@@ -1766,7 +1766,7 @@ namespace CraftMagicItems {
                 var label = new L10NString(selectedCraftingData.ParentNameId) + ": ";
                 var selectedItemSubTypeIndex = Selections.UpgradingBlueprint == null
                     ? DrawSelectionUserInterfaceElements(label, itemTypeNames, 6)
-                    : GetSelectionIndex(label);
+                    : Selections.GetSelectionIndex(label);
 
                 selectedCraftingData = SubCraftingData[selectedCraftingData.ParentNameId][selectedItemSubTypeIndex];
             }
@@ -2010,7 +2010,7 @@ namespace CraftMagicItems {
             }
 
             const string label = "Crafter: ";
-            var selectedSpellcasterIndex = GetSelectionIndex(label);
+            var selectedSpellcasterIndex = Selections.GetSelectionIndex(label);
             if (render) {
                 var partyNames = characters.Select(entity => $"{entity.CharacterName}" +
                                                              $"{((GetCraftingTimerComponentForCaster(entity.Descriptor)?.CraftingProjects.Any() ?? false) ? "*" : "")}")
@@ -2036,7 +2036,7 @@ namespace CraftMagicItems {
 
         public static int DrawSelectionUserInterfaceElements<T>(string label, string[] options, int horizontalCount, ref T emptyOnChange, bool addSpace = true)
         {
-            var index = GetSelectionIndex(label);
+            var index = Selections.GetSelectionIndex(label);
             if (index >= options.Length)
             {
                 index = 0;
@@ -2049,19 +2049,9 @@ namespace CraftMagicItems {
                 emptyOnChange = default(T);
             }
 
-            SetSelectionIndex(label, newIndex);
+            Selections.SetSelectionIndex(label, newIndex);
 
             return newIndex;
-        }
-
-        private static int GetSelectionIndex(string label)
-        {
-            return Selections.SelectedIndex.ContainsKey(label) ? Selections.SelectedIndex[label] : 0;
-        }
-
-        private static void SetSelectionIndex(string label, int value)
-        {
-            Selections.SelectedIndex[label] = value;
         }
 
         public static void AddItemBlueprintForSpell(UsableItemType itemType, BlueprintItemEquipment itemBlueprint) {
