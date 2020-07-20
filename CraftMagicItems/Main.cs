@@ -99,7 +99,6 @@ namespace CraftMagicItems
         public static readonly List<LogDataManager.LogItemData> PendingLogItems = new List<LogDataManager.LogItemData>();
 
         public static bool modEnabled = true;
-        private static Harmony12.HarmonyInstance harmonyInstance;
         private static CraftMagicItemsBlueprintPatcher blueprintPatcher;
 
         public static readonly Dictionary<ItemEntity, CraftingProjectData> ItemUpgradeProjects = new Dictionary<ItemEntity, CraftingProjectData>();
@@ -107,45 +106,16 @@ namespace CraftMagicItems
 
         private static readonly Random RandomGenerator = new Random();
 
-
-        /**
-         * Patch all HarmonyPatch classes in the assembly, starting in the order of the methods named in methodNameOrder, and the rest after that.
-         */
-        private static void PatchAllOrdered(params string[] methodNameOrder) {
-            var allAttributes = Assembly.GetExecutingAssembly().GetTypes()
-                    .Select(type => new {type, methods = Harmony12.HarmonyMethodExtensions.GetHarmonyMethods(type)})
-                    .Where(pair => pair.methods != null && pair.methods.Count > 0)
-                    .Select(pair => new {pair.type, attributes = Harmony12.HarmonyMethod.Merge(pair.methods)})
-                    .OrderBy(pair => methodNameOrder
-                                         .Select((name, index) => new {name, index})
-                                         .FirstOrDefault(nameIndex => nameIndex.name.Equals(pair.attributes.methodName))?.index
-                                     ?? methodNameOrder.Length)
-                ;
-            foreach (var pair in allAttributes) {
-                new Harmony12.PatchProcessor(harmonyInstance, pair.type, pair.attributes).Patch();
-            }
-        }
-
-        /**
-         * Unpatch all HarmonyPatch classes for harmonyInstance, except the ones whose method names match exceptMethodName
-         */
-        private static void UnpatchAllExcept(params string[] exceptMethodName) {
-            if (harmonyInstance != null) {
-                try {
-                    foreach (var method in harmonyInstance.GetPatchedMethods().ToArray()) {
-                        if (!exceptMethodName.Contains(method.Name) && harmonyInstance.GetPatchInfo(method).Owners.Contains(harmonyInstance.Id)) {
-                            harmonyInstance.Unpatch(method, Harmony12.HarmonyPatchType.All, harmonyInstance.Id);
-                        }
-                    }
-                } catch (Exception e) {
-                    ModEntry.Logger.Error($"Exception during Un-patching: {e}");
-                }
-            }
-        }
-
         // ReSharper disable once UnusedMember.Local
-        private static void Load(UnityModManager.ModEntry modEntry) {
-            try {
+        private static void Load(UnityModManager.ModEntry modEntry)
+        {
+            HarmonyPatcher patcher = new HarmonyPatcher(modEntry.Logger.Error);
+
+            // methods involved in recovering a save when mod is disabled.
+            var saveRecoveryMethods = new[] { "TryGetBlueprint", "PostLoad", "OnAreaLoaded" };
+
+            try
+            {
                 Selections = new Selections();
                 ModEntry = modEntry;
                 ModSettings = UnityModManager.ModSettings.Load<Settings>(modEntry);
@@ -156,17 +126,17 @@ namespace CraftMagicItems
                 modEntry.OnToggle = OnToggle;
                 modEntry.OnGUI = OnGui;
                 CustomBlueprintBuilder.InitialiseBlueprintRegex(CraftMagicItemsBlueprintPatcher.BlueprintRegex);
-                harmonyInstance = Harmony12.HarmonyInstance.Create("kingmaker.craftMagicItems");
-                // Patch the recovery methods first.
-                PatchAllOrdered("TryGetBlueprint", "PostLoad", "OnAreaLoaded");
+                patcher.PatchAllOrdered(saveRecoveryMethods);   // Patch the recovery methods first.
                 Accessors = new CraftMagicItemsAccessors();
                 blueprintPatcher = new CraftMagicItemsBlueprintPatcher(Accessors, modEnabled);
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 modEntry.Logger.Error($"Exception during Load: {e}");
                 modEnabled = false;
                 CustomBlueprintBuilder.Enabled = false;
                 // Unpatch everything except methods involved in recovering a save when mod is disabled.
-                UnpatchAllExcept("TryGetBlueprint", "PostLoad", "OnAreaLoaded");
+                patcher.UnpatchAllExcept(saveRecoveryMethods);
                 throw;
             }
         }
