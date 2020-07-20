@@ -54,7 +54,7 @@ using Random = System.Random;
 namespace CraftMagicItems
 {
     public static class Main {
-        private const string BondedItemRitual = "bondedItemRitual";
+        public const string BondedItemRitual = "bondedItemRitual";
 
         private const string CustomPriceLabel = "Crafting Cost: ";
 
@@ -371,7 +371,7 @@ namespace CraftMagicItems
             }
         }
 
-        private static void BondWithObject(UnitEntityData caster, ItemEntity item) {
+        public static void BondWithObject(UnitEntityData caster, ItemEntity item) {
             UnBondFromCurrentBondedItem(caster);
             var bondedComponent = GetBondedItemComponentForCaster(caster.Descriptor, true);
             bondedComponent.ownerItem = item;
@@ -754,7 +754,7 @@ namespace CraftMagicItems
             return enumeration.Aggregate("", (prev, curr) => prev + (prev != "" ? delimiter : "") + curr.ToString());
         }
 
-        private static string BuildCommaList(this IEnumerable<string> list, bool or) {
+        public static string BuildCommaList(this IEnumerable<string> list, bool or) {
             var array = list.ToArray();
             if (array.Length < 2) {
                 return array.Join();
@@ -1528,7 +1528,7 @@ namespace CraftMagicItems
             return casterLevel;
         }
 
-        private static SpellSchool CheckForOppositionSchool(UnitDescriptor crafter, BlueprintAbility[] prerequisiteSpells) {
+        public static SpellSchool CheckForOppositionSchool(UnitDescriptor crafter, BlueprintAbility[] prerequisiteSpells) {
             if (prerequisiteSpells != null) {
                 foreach (var spell in prerequisiteSpells) {
                     if (crafter.Spellbooks.Any(spellbook => spellbook.Blueprint.SpellList.Contains(spell)
@@ -1670,7 +1670,7 @@ namespace CraftMagicItems
             return dc;
         }
 
-        private static int CalculateMundaneCraftingDC(RecipeBasedItemCraftingData craftingData, BlueprintItem blueprint, UnitDescriptor crafter,
+        public static int CalculateMundaneCraftingDC(RecipeBasedItemCraftingData craftingData, BlueprintItem blueprint, UnitDescriptor crafter,
             RecipeData recipe = null) {
             var dc = CalculateBaseMundaneCraftingDC(craftingData, blueprint, crafter);
             return dc + (recipe?.MundaneDC ?? blueprint.Enchantments
@@ -1910,7 +1910,7 @@ namespace CraftMagicItems
             }
         }
 
-        private static bool IsPlayerSomewhereSafe() {
+        public static bool IsPlayerSomewhereSafe() {
             if (Game.Instance.CurrentlyLoadedArea != null && Areas.SafeBlueprintAreaGuids.Contains(Game.Instance.CurrentlyLoadedArea.AssetGuid)) {
                 return true;
             }
@@ -1918,7 +1918,7 @@ namespace CraftMagicItems
             return IsPlayerInCapital();
         }
 
-        private static bool IsPlayerInCapital() {
+        public static bool IsPlayerInCapital() {
             // Detect if the player is in the capital, or in kingdom management from the throne room.
             return (Game.Instance.CurrentlyLoadedArea != null && Game.Instance.CurrentlyLoadedArea.IsCapital) ||
                    (Game.Instance.CurrentMode == GameModeType.Kingdom && KingdomTimelineManager.CanAdvanceTime());
@@ -2025,7 +2025,7 @@ namespace CraftMagicItems
             return blueprintIds[RandomGenerator.Next(blueprintIds.Length)];
         }
 
-        private static void CraftItem(ItemEntity resultItem, ItemEntity upgradeItem = null) {
+        public static void CraftItem(ItemEntity resultItem, ItemEntity upgradeItem = null) {
             var characters = UIUtility.GetGroup(true).Where(character => character.IsPlayerFaction && !character.Descriptor.IsPet);
             foreach (var character in characters) {
                 var bondedComponent = GetBondedItemComponentForCaster(character.Descriptor);
@@ -2268,7 +2268,7 @@ namespace CraftMagicItems
             }
         }
 
-        private static bool IsMundaneCraftingData(ItemCraftingData craftingData) {
+        public static bool IsMundaneCraftingData(ItemCraftingData craftingData) {
             return craftingData.FeatGuid == null;
         }
 
@@ -2617,7 +2617,7 @@ namespace CraftMagicItems
             }
         }
 
-        private static AbilityData FindCasterSpell(UnitDescriptor caster, BlueprintAbility spellBlueprint, bool mustHavePrepared,
+        public static AbilityData FindCasterSpell(UnitDescriptor caster, BlueprintAbility spellBlueprint, bool mustHavePrepared,
             IReadOnlyCollection<AbilityData> spellsToCast) {
             foreach (var spellbook in caster.Spellbooks) {
                 var spellLevel = spellbook.GetSpellLevel(spellBlueprint);
@@ -2678,7 +2678,7 @@ namespace CraftMagicItems
             return fromItem?.Ability?.Data;
         }
 
-        private static int CheckSpellPrerequisites(CraftingProjectData project, UnitDescriptor caster, bool mustPrepare,
+        public static int CheckSpellPrerequisites(CraftingProjectData project, UnitDescriptor caster, bool mustPrepare,
             out List<BlueprintAbility> missingSpells, out List<AbilityData> spellsToCast) {
             return CheckSpellPrerequisites(project.SpellPrerequisites, project.AnyPrerequisite, caster, mustPrepare, out missingSpells, out spellsToCast);
         }
@@ -2705,7 +2705,7 @@ namespace CraftMagicItems
             return anyPrerequisite ? Math.Min(1, missingSpells.Count) : missingSpells.Count;
         }
 
-        private static int CheckFeatPrerequisites(CraftingProjectData project, UnitDescriptor caster, out List<BlueprintFeature> missingFeats) {
+        public static int CheckFeatPrerequisites(CraftingProjectData project, UnitDescriptor caster, out List<BlueprintFeature> missingFeats) {
             return CheckFeatPrerequisites(project.FeatPrerequisites, project.AnyPrerequisite, caster, out missingFeats);
         }
 
@@ -2729,7 +2729,7 @@ namespace CraftMagicItems
             return anyPrerequisite ? Math.Min(1, missingFeats.Count) : missingFeats.Count;
         }
 
-        private static int CheckCrafterPrerequisites(CraftingProjectData project, UnitDescriptor caster) {
+        public static int CheckCrafterPrerequisites(CraftingProjectData project, UnitDescriptor caster) {
             var missing = GetMissingCrafterPrerequisites(project.CrafterPrerequisites, caster);
             foreach (var prerequisite in missing) {
                 AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-crafter-prerequisite",
@@ -2753,249 +2753,6 @@ namespace CraftMagicItems
             }
 
             return missingCrafterPrerequisites;
-        }
-
-        public static void WorkOnProjects(UnitDescriptor caster, bool returningToCapital) {
-            if (!caster.IsPlayerFaction || caster.State.IsDead || caster.State.IsFinallyDead) {
-                return;
-            }
-
-            Selections.CurrentCaster = caster.Unit;
-            var withPlayer = Game.Instance.Player.PartyCharacters.Contains(caster.Unit);
-            var playerInCapital = IsPlayerInCapital();
-            // Only update characters in the capital when the player is also there.
-            if (!withPlayer && !playerInCapital) {
-                // Character is back in the capital - skipping them for now.
-                return;
-            }
-
-            var isAdventuring = withPlayer && !IsPlayerSomewhereSafe();
-            var timer = GetCraftingTimerComponentForCaster(caster);
-            if (timer == null || timer.CraftingProjects.Count == 0) {
-                // Character is not doing any crafting
-                return;
-            }
-
-            // Round up the number of days, so caster makes some progress on a new project the first time they rest.
-            var interval = Game.Instance.Player.GameTime.Subtract(timer.LastUpdated);
-            var daysAvailableToCraft = (int) Math.Ceiling(interval.TotalDays);
-            if (daysAvailableToCraft <= 0) {
-                if (isAdventuring)
-                {
-                    AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-not-full-day"));
-                }
-
-                return;
-            }
-
-            // Time passes for this character even if they end up making no progress on their projects.  LastUpdated can go up to
-            // a day into the future, due to the rounding up of daysAvailableToCraft.
-            timer.LastUpdated += TimeSpan.FromDays(daysAvailableToCraft);
-            // Work on projects sequentially, skipping any that can't progress due to missing items, missing prerequisites or having too high a DC.
-            foreach (var project in timer.CraftingProjects.ToList()) {
-                if (project.UpgradeItem != null) {
-                    // Check if the item has been dropped and picked up again, which apparently creates a new object with the same blueprint.
-                    if (project.UpgradeItem.Collection != Game.Instance.Player.Inventory && project.UpgradeItem.Collection != Game.Instance.Player.SharedStash) {
-                        var itemInStash = Game.Instance.Player.SharedStash.FirstOrDefault(item => item.Blueprint == project.UpgradeItem.Blueprint);
-                        if (itemInStash != null) {
-                            ItemUpgradeProjects.Remove(project.UpgradeItem);
-                            ItemUpgradeProjects[itemInStash] = project;
-                            project.UpgradeItem = itemInStash;
-                        } else {
-                            var itemInInventory = Game.Instance.Player.Inventory.FirstOrDefault(item => item.Blueprint == project.UpgradeItem.Blueprint);
-                            if (itemInInventory != null) {
-                                ItemUpgradeProjects.Remove(project.UpgradeItem);
-                                ItemUpgradeProjects[itemInInventory] = project;
-                                project.UpgradeItem = itemInInventory;
-                            }
-                        }
-                    }
-
-                    // Check that the caster can get at the item they're upgrading... it must be in the party inventory, and either un-wielded, or the crafter
-                    // must be with the wielder (together in the capital or out in the party together).
-                    var wieldedInParty = (project.UpgradeItem.Wielder == null || Game.Instance.Player.PartyCharacters.Contains(project.UpgradeItem.Wielder.Unit));
-                    if ((!playerInCapital || returningToCapital)
-                        && (project.UpgradeItem.Collection != Game.Instance.Player.SharedStash || withPlayer)
-                        && (project.UpgradeItem.Collection != Game.Instance.Player.Inventory || ((!withPlayer || !wieldedInParty) && (withPlayer || wieldedInParty)))) {
-                        project.AddMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-upgrade-item", project.UpgradeItem.Blueprint.Name));
-                        AddBattleLogMessage(project.LastMessage);
-                        continue;
-                    }
-                }
-
-                var craftingData = LoadedData.ItemCraftingData.FirstOrDefault(data => data.Name == project.ItemType);
-                StatType craftingSkill;
-                int dc;
-                int progressRate;
-
-                if (project.ItemType == BondedItemRitual) {
-                    craftingSkill = StatType.SkillKnowledgeArcana;
-                    dc = 10 + project.Crafter.Stats.GetStat(craftingSkill).ModifiedValue;
-                    progressRate = ModSettings.MagicCraftingRate;
-                } else if (IsMundaneCraftingData(craftingData)) {
-                    craftingSkill = StatType.SkillKnowledgeWorld;
-                    dc = CalculateMundaneCraftingDC((RecipeBasedItemCraftingData) craftingData, project.ResultItem.Blueprint, caster);
-                    progressRate = ModSettings.MundaneCraftingRate;
-                } else {
-                    craftingSkill = StatType.SkillKnowledgeArcana;
-                    dc = 5 + project.CasterLevel;
-                    progressRate = ModSettings.MagicCraftingRate;
-                }
-
-                var missing = CheckSpellPrerequisites(project, caster, isAdventuring, out var missingSpells, out var spellsToCast);
-                if (missing > 0) {
-                    var missingSpellNames = missingSpells.Select(ability => ability.Name).BuildCommaList(project.AnyPrerequisite);
-                    if (craftingData.PrerequisitesMandatory || project.PrerequisitesMandatory) {
-                        project.AddMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-prerequisite",
-                            project.ResultItem.Name, missingSpellNames));
-                        AddBattleLogMessage(project.LastMessage);
-                        // If the item type has mandatory prerequisites and some are missing, move on to the next project.
-                        continue;
-                    }
-                    
-AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-spell", missingSpellNames,
-                        DifficultyClass.MissingPrerequisiteDCModifier * missing));
-                }
-                var missing2 = CheckFeatPrerequisites(project, caster, out var missingFeats);
-                if (missing2 > 0) {
-                    var missingFeatNames = missingFeats.Select(ability => ability.Name).BuildCommaList(project.AnyPrerequisite);
-                    AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-feat", missingFeatNames,
-                        DifficultyClass.MissingPrerequisiteDCModifier * missing2));
-                }
-                missing += missing2;
-                missing += CheckCrafterPrerequisites(project, caster);
-                dc += DifficultyClass.MissingPrerequisiteDCModifier * missing;
-                var casterLevel = CharacterCasterLevel(caster);
-                if (casterLevel < project.CasterLevel) {
-                    // Rob's ruling... if you're below the prerequisite caster level, you're considered to be missing a prerequisite for each
-                    // level you fall short, unless ModSettings.CasterLevelIsSinglePrerequisite is true.
-                    var casterLevelPenalty = ModSettings.CasterLevelIsSinglePrerequisite
-                        ? DifficultyClass.MissingPrerequisiteDCModifier
-                        : DifficultyClass.MissingPrerequisiteDCModifier * (project.CasterLevel - casterLevel);
-                    dc += casterLevelPenalty;
-                    AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-low-caster-level", project.CasterLevel, casterLevelPenalty));
-                }
-                var oppositionSchool = CheckForOppositionSchool(caster, project.SpellPrerequisites);
-                if (oppositionSchool != SpellSchool.None) {
-                    dc += DifficultyClass.OppositionSchoolDCModifier;
-                    AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-opposition-school",
-                        LocalizedTexts.Instance.SpellSchoolNames.GetText(oppositionSchool), DifficultyClass.OppositionSchoolDCModifier));
-                }
-
-                var skillCheck = 10 + caster.Stats.GetStat(craftingSkill).ModifiedValue;
-                if (skillCheck < dc) {
-                    // Can't succeed by taking 10... move on to the next project.
-                    project.AddMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-dc-too-high", project.ResultItem.Name,
-                        LocalizedTexts.Instance.Stats.GetText(craftingSkill), skillCheck, dc));
-                    AddBattleLogMessage(project.LastMessage);
-                    continue;
-                }
-
-                // Cleared the last hurdle, so caster is going to make progress on this project.
-                // You only work at 1/4 speed if you're crafting while adventuring.
-                var adventuringPenalty = !isAdventuring || ModSettings.CraftAtFullSpeedWhileAdventuring ? 1 : DifficultyClass.AdventuringProgressPenalty;
-                // Each 1 by which the skill check exceeds the DC increases the crafting rate by 20% of the base progressRate
-                var progressPerDay = (int) (progressRate * (1 + (float) (skillCheck - dc) / 5) / adventuringPenalty);
-                var daysUntilProjectFinished = (int) Math.Ceiling(1.0 * (project.TargetCost - project.Progress) / progressPerDay);
-                var daysCrafting = Math.Min(daysUntilProjectFinished, daysAvailableToCraft);
-                var progressGold = daysCrafting * progressPerDay;
-                foreach (var spell in spellsToCast) {
-                    if (spell.SourceItem != null) {
-                        // Use items whether we're adventuring or not, one charge per day of daysCrafting.  We might run out of charges...
-                        if (spell.SourceItem.IsSpendCharges && !((BlueprintItemEquipment) spell.SourceItem.Blueprint).RestoreChargesOnRest) {
-                            var itemSpell = spell;
-                            for (var day = 0; day < daysCrafting; ++day) {
-                                if (itemSpell.SourceItem.Charges <= 0) {
-                                    // This item is exhausted and we haven't finished crafting - find another item.
-                                    itemSpell = FindCasterSpell(caster, spell.Blueprint, isAdventuring, spellsToCast);
-                                }
-
-                                if (itemSpell == null) {
-                                    // We've run out of items that can cast the spell...crafting progress is going to slow, if not stop.
-                                    progressGold -= progressPerDay * (daysCrafting - day);
-                                    skillCheck -= DifficultyClass.MissingPrerequisiteDCModifier;
-                                    if (craftingData.PrerequisitesMandatory || project.PrerequisitesMandatory) {
-                                        AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-prerequisite", project.ResultItem.Name, spell.Name));
-                                        daysCrafting = day;
-                                        break;
-                                    }
-                                    
-                AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-missing-spell", spell.Name, DifficultyClass.MissingPrerequisiteDCModifier));
-                                    if (skillCheck < dc) {
-                                        // Can no longer make progress
-                                        AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-dc-too-high", project.ResultItem.Name,
-                                            LocalizedTexts.Instance.Stats.GetText(craftingSkill), skillCheck, dc));
-                                        daysCrafting = day;
-                                    } else {
-                                        // Progress will be slower, but they don't need to cast this spell any longer.
-                                        progressPerDay = (int) (progressRate * (1 + (float) (skillCheck - dc) / 5) / adventuringPenalty);
-                                        daysUntilProjectFinished =
-                                            day + (int) Math.Ceiling(1.0 * (project.TargetCost - project.Progress - progressGold) / progressPerDay);
-                                        daysCrafting = Math.Min(daysUntilProjectFinished, daysAvailableToCraft);
-                                        progressGold += (daysCrafting - day) * progressPerDay;
-                                    }
-
-                                    break;
-                                }
-
-                                GameLogContext.SourceUnit = caster.Unit;
-                                GameLogContext.Text = itemSpell.SourceItem.Name;
-                                AddBattleLogMessage(LocalizedStringBlueprints.CharacterUsedItemLocalized);
-                                GameLogContext.Clear();
-                                itemSpell.SourceItem.SpendCharges(caster);
-                            }
-                        }
-                    } else if (isAdventuring) {
-                        // Actually cast the spells if we're adventuring.
-                        AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-expend-spell", spell.Name));
-                        spell.SpendFromSpellbook();
-                    }
-                }
-
-                var progressKey = project.ItemType == BondedItemRitual
-                    ? "craftMagicItems-logMessage-made-progress-bondedItem"
-                    : "craftMagicItems-logMessage-made-progress";
-                var progress = LocalizationHelper.FormatLocalizedString(progressKey, progressGold, project.TargetCost - project.Progress, project.ResultItem.Name);
-                var checkResult = LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-made-progress-check", LocalizedTexts.Instance.Stats.GetText(craftingSkill),
-                    skillCheck, dc);
-                AddBattleLogMessage(progress, checkResult);
-                daysAvailableToCraft -= daysCrafting;
-                project.Progress += progressGold;
-                if (project.Progress >= project.TargetCost) {
-                    // Completed the project!
-                    if (project.ItemType == BondedItemRitual) {
-                        AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-bonding-ritual-complete", project.ResultItem.Name), project.ResultItem);
-                        BondWithObject(project.Crafter, project.ResultItem);
-                    } else
-                    {
-                        
-    AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-logMessage-crafting-complete", project.ResultItem.Name), project.ResultItem);
-                        CraftItem(project.ResultItem, project.UpgradeItem);
-                    }
-                    timer.CraftingProjects.Remove(project);
-                    if (project.UpgradeItem == null) {
-                        ItemCreationProjects.Remove(project);
-                    } else {
-                        ItemUpgradeProjects.Remove(project.UpgradeItem);
-                    }
-                } else {
-                    var completeKey = project.ItemType == BondedItemRitual
-                        ? "craftMagicItems-logMessage-made-progress-bonding-ritual-amount-complete"
-                        : "craftMagicItems-logMessage-made-progress-amount-complete";
-                    var amountComplete = LocalizationHelper.FormatLocalizedString(completeKey, project.ResultItem.Name, 100 * project.Progress / project.TargetCost);
-                    AddBattleLogMessage(amountComplete, project.ResultItem);
-                    project.AddMessage($"{progress} {checkResult}");
-                }
-
-                if (daysAvailableToCraft <= 0) {
-                    return;
-                }
-            }
-
-            if (daysAvailableToCraft > 0) {
-                // They didn't use up all available days - reset the time they can start crafting to now.
-                timer.LastUpdated = Game.Instance.Player.GameTime;
-            }
         }
     }
 }
