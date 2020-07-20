@@ -99,7 +99,7 @@ namespace CraftMagicItems
         public static readonly List<LogDataManager.LogItemData> PendingLogItems = new List<LogDataManager.LogItemData>();
 
         public static bool modEnabled = true;
-        private static CraftMagicItemsBlueprintPatcher blueprintPatcher;
+        public static CraftMagicItemsBlueprintPatcher blueprintPatcher;
 
         public static readonly Dictionary<ItemEntity, CraftingProjectData> ItemUpgradeProjects = new Dictionary<ItemEntity, CraftingProjectData>();
         public static readonly List<CraftingProjectData> ItemCreationProjects = new List<CraftingProjectData>();
@@ -3140,55 +3140,6 @@ AddBattleLogMessage(LocalizationHelper.FormatLocalizedString("craftMagicItems-lo
             if (daysAvailableToCraft > 0) {
                 // They didn't use up all available days - reset the time they can start crafting to now.
                 timer.LastUpdated = Game.Instance.Player.GameTime;
-            }
-        }
-
-        private static void AddToLootTables(BlueprintItem blueprint, string[] tableNames, bool firstTime) {
-            var tableCount = tableNames.Length;
-            foreach (var loot in ResourcesLibrary.GetBlueprints<BlueprintLoot>()) {
-                if (tableNames.Contains(loot.name)) {
-                    tableCount--;
-                    if (!loot.Items.Any(entry => entry.Item == blueprint)) {
-                        var lootItems = loot.Items.ToList();
-                        lootItems.Add(new LootEntry {Count = 1, Item = blueprint});
-                        loot.Items = lootItems.ToArray();
-                    }
-                }
-            }
-            foreach (var unitLoot in ResourcesLibrary.GetBlueprints<BlueprintUnitLoot>()) {
-                if (tableNames.Contains(unitLoot.name)) {
-                    tableCount--;
-                    if (unitLoot is BlueprintSharedVendorTable vendor) {
-                        if (firstTime) {
-                            var vendorTable = Game.Instance.Player.SharedVendorTables.GetTable(vendor);
-                            vendorTable.Add(blueprint.CreateEntity());
-                        }
-                    } else if (!unitLoot.ComponentsArray.Any(component => component is LootItemsPackFixed pack && pack.Item.Item == blueprint)) {
-                        var lootItem = new LootItem();
-                        Accessors.SetLootItemItem(lootItem, blueprint);
-                        var lootComponent = ScriptableObject.CreateInstance<LootItemsPackFixed>();
-                        Accessors.SetLootItemsPackFixedItem(lootComponent, lootItem);
-                        blueprintPatcher.EnsureComponentNameUnique(lootComponent, unitLoot.ComponentsArray);
-                        var components = unitLoot.ComponentsArray.ToList();
-                        components.Add(lootComponent);
-                        unitLoot.ComponentsArray = components.ToArray();
-                    }
-                }
-            }
-            if (tableCount > 0) {
-                Harmony12.FileLog.Log($"!!! Failed to match all loot table names for {blueprint.Name}.  {tableCount} table names not found.");
-            }
-        }
-
-        public static void UpgradeSave(Version version) {
-            foreach (var lootItem in LoadedData.CustomLootItems) {
-                var firstTime = (version == null || version.CompareTo(lootItem.AddInVersion) < 0);
-                var item = ResourcesLibrary.TryGetBlueprint<BlueprintItem>(lootItem.AssetGuid);
-                if (item == null) {
-                    Harmony12.FileLog.Log($"!!! Loot item not created: {lootItem.AssetGuid}");
-                } else {
-                    AddToLootTables(item, lootItem.LootTables, firstTime);
-                }
             }
         }
     }
