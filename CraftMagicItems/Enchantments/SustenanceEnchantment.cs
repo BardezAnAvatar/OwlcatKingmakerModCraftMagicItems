@@ -15,7 +15,7 @@ using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Mechanics;
 
-namespace CraftMagicItems {
+namespace CraftMagicItems.Enchantments {
     // A living character with a SustenanceFact does not need rations when they camp, and can perform two camp roles.
     public class SustenanceFact : BlueprintBuff {
     }

@@ -13,7 +13,7 @@ using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Mechanics;
 
-namespace CraftMagicItems {
+namespace CraftMagicItems.Enchantments {
     public class WildFact : BlueprintBuff {
         public WildFact() {
             Main.Accessors.SetBlueprintBuffFlags(this, 2 + 8); // Enum is private... 2 = HiddenInUi, 8 = StayOnDeath
