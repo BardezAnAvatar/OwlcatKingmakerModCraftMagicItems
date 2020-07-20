@@ -116,7 +116,7 @@ namespace CraftMagicItems.Patches.Harmony
             var allUsableItems = Resources.FindObjectsOfTypeAll<BlueprintItemEquipment>();
             foreach (var item in allUsableItems)
             {
-                Main.AddItemIdForEnchantment(item);
+                AddItemIdForEnchantment(item);
             }
 
             var allNonRecipeEnchantmentsInItems = Resources.FindObjectsOfTypeAll<BlueprintEquipmentEnchantment>()
@@ -508,6 +508,22 @@ namespace CraftMagicItems.Patches.Harmony
             if (!Main.LoadedData.EnchantmentIdToRecipe[enchantmentId].Contains(recipe))
             {
                 Main.LoadedData.EnchantmentIdToRecipe[enchantmentId].Add(recipe);
+            }
+        }
+
+        private static void AddItemIdForEnchantment(BlueprintItemEquipment itemBlueprint)
+        {
+            if (itemBlueprint != null)
+            {
+                foreach (var enchantment in Main.GetEnchantments(itemBlueprint))
+                {
+                    if (!Main.LoadedData.EnchantmentIdToItem.ContainsKey(enchantment.AssetGuid))
+                    {
+                        Main.LoadedData.EnchantmentIdToItem[enchantment.AssetGuid] = new List<BlueprintItemEquipment>();
+                    }
+
+                    Main.LoadedData.EnchantmentIdToItem[enchantment.AssetGuid].Add(itemBlueprint);
+                }
             }
         }
     }
