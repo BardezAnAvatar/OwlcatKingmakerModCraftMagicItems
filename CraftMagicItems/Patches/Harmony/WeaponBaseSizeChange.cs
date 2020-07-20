@@ -1,17 +1,11 @@
 using CraftMagicItems.Localization;
 using Kingmaker.Blueprints;
-using Kingmaker.Blueprints.Items.Ecnchantments;
 using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.EntitySystem.Stats;
-using Kingmaker.Enums;
-using Kingmaker.Items;
-using Kingmaker.PubSubSystem;
 using Kingmaker.RuleSystem;
-using Kingmaker.RuleSystem.Rules;
-using UnityEngine;
-using Object = UnityEngine.Object;
 
-namespace CraftMagicItems {
+namespace CraftMagicItems.Patches.Harmony
+{
     [ComponentName("Weapon Base Size Change")]
     [AllowMultipleComponents]
     /**

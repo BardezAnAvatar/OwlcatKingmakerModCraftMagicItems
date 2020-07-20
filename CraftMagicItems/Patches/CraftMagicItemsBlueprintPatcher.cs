@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using CraftMagicItems.Constants;
+using CraftMagicItems.Localization;
+using CraftMagicItems.Patches.Harmony;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Items;
@@ -22,11 +24,10 @@ using Kingmaker.UI.Common;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.ActivatableAbilities;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
-using Kingmaker.View.Animation;
 using Kingmaker.Utility;
+using Kingmaker.View.Animation;
 using UnityEngine;
 using Object = UnityEngine.Object;
-using CraftMagicItems.Localization;
 
 namespace CraftMagicItems.Patches
 {

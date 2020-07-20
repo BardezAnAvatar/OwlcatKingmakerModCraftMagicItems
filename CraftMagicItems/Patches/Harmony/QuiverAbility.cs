@@ -15,7 +15,7 @@ using Kingmaker.UnitLogic.FactLogic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace CraftMagicItems {
+namespace CraftMagicItems.Patches.Harmony {
     public class CreateQuiverAbility : ScriptableObject {
         private static bool initialised;
 
